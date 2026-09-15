@@ -1,6 +1,13 @@
-# Testing & Mobile Access Guide: Kids Voice AI Copilot (Ages 5-12)
+## 🌐 0. Standalone GitHub Repository & Pages Setup
 
-This guide explains how to test the **Kids Voice AI Copilot**, how to switch languages dynamically, how to test distinct kid voices, how to use the **Android APK**, and how to open the app on an **iPhone / iPad**.
+This app is completely decoupled and configured as its own standalone Git repository:
+- **Repository URL**: `https://github.com/manivask/kids-voice-ai-copilot`
+- **GitHub Pages Web App URL**: `https://manivask.github.io/kids-voice-ai-copilot/`
+- **Push command**:
+  ```powershell
+  cd apps\chatbot
+  git push -u origin main
+  ```
 
 ---
 
