@@ -1,0 +1,7 @@
+{
+  "appId": "com.voiceai.copilot",
+  "appName": "Voice AI Copilot",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
+
