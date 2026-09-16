@@ -18,97 +18,69 @@ class VoiceEngine {
     this.currentUtterance = null;
     this.liveMeterFrame = null;
 
-    // Natural AI Kid Voice Catalog (Modeled after kid-voices-ai.com: 3 Boys & 3 Girls)
-    this.personas = [
-      // ==================== 👦 3 AI BOY VOICES ====================
-      {
-        id: 'kid-boy-leo',
-        name: 'Leo (Boy 6-8)',
-        ageGroup: 'Age 6-8',
-        gender: 'kid-boy',
-        category: 'kids-boy',
-        tagline: 'Energetic, Curious & High-Pitched Adventurer Boy',
-        avatarText: '👦',
-        pitch: 1.58,
-        rate: 1.10,
-        voiceIndexOffset: 0,
-        voicePattern: /zira|jenny|samantha|aria|google|eva/i
-      },
-      {
-        id: 'kid-boy-oliver',
-        name: 'Oliver (Boy 9-12)',
-        ageGroup: 'Age 9-12',
-        gender: 'kid-boy',
-        category: 'kids-boy',
-        tagline: 'Smart, Fast-Thinking & Cheerful Explorer Boy',
-        avatarText: '🎒',
-        pitch: 1.40,
-        rate: 1.05,
-        voiceIndexOffset: 1,
-        voicePattern: /jenny|zira|samantha|victoria|george/i
-      },
-      {
-        id: 'kid-boy-charlie',
-        name: 'Charlie (Boy 5-7)',
-        ageGroup: 'Age 5-7',
-        gender: 'kid-boy',
-        category: 'kids-boy',
-        tagline: 'Cute, Playful & Animated Storytelling Young Boy',
-        avatarText: '🚀',
-        pitch: 1.68,
-        rate: 1.02,
-        voiceIndexOffset: 2,
-        voicePattern: /aria|samantha|zira|jenny/i
-      },
+    // Natural AI Kid Boy Voice (Embedded Audio Model from kid-voice-output.mp3)
+    this.sampleAudioPath = 'audio/kids-voice-output.mp3';
+    this.sampleAudio = null;
 
-      // ==================== 👧 3 AI GIRL VOICES ====================
+    this.personas = [
       {
-        id: 'kid-girl-sadie',
-        name: 'Sadie (Girl 6-8)',
-        ageGroup: 'Age 6-8',
-        gender: 'kid-girl',
-        category: 'kids-girl',
-        tagline: 'Bright, Bubbly & Joyful Young Girl (KidVoice Style)',
-        avatarText: '👧',
-        pitch: 1.62,
-        rate: 1.06,
+        id: 'kid-boy-voice',
+        name: 'Leo (AI Kid Boy)',
+        ageGroup: 'Age 7-10',
+        gender: 'kid-boy',
+        category: 'kids-boy',
+        tagline: 'Natural AI Kid Boy Voice (High-Fidelity Audio Model)',
+        avatarText: '👦',
+        pitch: 1.45,
+        rate: 1.05,
+        audioFile: 'audio/kids-voice-output.mp3',
         voiceIndexOffset: 0,
-        voicePattern: /samantha|jenny|zira|karen|aria/i
-      },
-      {
-        id: 'kid-girl-shygirl',
-        name: 'Shygirl (Girl 5-7)',
-        ageGroup: 'Age 5-7',
-        gender: 'kid-girl',
-        category: 'kids-girl',
-        tagline: 'Gentle, Soft-Spoken & Adorable Little Girl (KidVoice Style)',
-        avatarText: '🌸',
-        pitch: 1.70,
-        rate: 0.96,
-        voiceIndexOffset: 1,
-        voicePattern: /victoria|eva|fiona|susan|zira/i
-      },
-      {
-        id: 'kid-girl-cookie',
-        name: 'Cookie (Girl 9-12)',
-        ageGroup: 'Age 9-12',
-        gender: 'kid-girl',
-        category: 'kids-girl',
-        tagline: 'Melodious, Expressive & Friendly Kid Storyteller',
-        avatarText: '🍪',
-        pitch: 1.48,
-        rate: 1.02,
-        voiceIndexOffset: 2,
-        voicePattern: /tessa|moira|veena|catherine|jenny/i
+        voicePattern: /zira|jenny|samantha|aria|google|eva|david/i
       }
     ];
 
-    this.currentPersonaId = 'kid-boy-leo';
+    this.currentPersonaId = 'kid-boy-voice';
     this.initSpeechRecognition();
     this.loadVoices();
 
     if (window.speechSynthesis && speechSynthesis.onvoiceschanged !== undefined) {
       speechSynthesis.onvoiceschanged = () => this.loadVoices();
+    }
+  }
+
+  /**
+   * Plays the authentic natural AI kid voice MP3 file
+   */
+  playSampleAudio(onStart, onEnd) {
+    this.stopSpeaking();
+    try {
+      if (!this.sampleAudio) {
+        this.sampleAudio = new Audio(this.sampleAudioPath);
+      }
+      this.sampleAudio.currentTime = 0;
+      this.isSpeaking = true;
+      if (onStart) onStart();
+
+      this.sampleAudio.onended = () => {
+        this.isSpeaking = false;
+        if (onEnd) onEnd();
+      };
+
+      this.sampleAudio.onerror = (e) => {
+        console.warn('Sample audio play error, falling back to speech synth:', e);
+        this.isSpeaking = false;
+        if (onEnd) onEnd();
+      };
+
+      this.sampleAudio.play().catch(err => {
+        console.warn('Audio play promise error:', err);
+        this.isSpeaking = false;
+        if (onEnd) onEnd();
+      });
+    } catch (e) {
+      console.warn('Exception playing audio sample:', e);
+      this.isSpeaking = false;
+      if (onEnd) onEnd();
     }
   }
 
@@ -301,11 +273,17 @@ class VoiceEngine {
   }
 
   stopSpeaking() {
+    if (this.sampleAudio) {
+      try {
+        this.sampleAudio.pause();
+        this.sampleAudio.currentTime = 0;
+      } catch (_) {}
+    }
     if (this.synth) {
       this.synth.cancel();
-      this.isSpeaking = false;
-      this.currentUtterance = null;
     }
+    this.isSpeaking = false;
+    this.currentUtterance = null;
   }
 
   initSpeechRecognition() {

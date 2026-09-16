@@ -224,8 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = `voice-card-option ${isSelected ? 'selected' : ''}`;
       card.dataset.personaId = p.id;
 
-      let badgeClass = p.category === 'kids-boy' ? 'kids-boy' :
-                       p.category === 'kids-girl' ? 'kids-girl' : 'soft';
+      let badgeClass = 'kids-boy';
       if (p.isUserCloned) badgeClass = 'user-cloned';
 
       const isPlaying = currentlyPreviewingId === p.id && voice.isSpeaking;
@@ -249,8 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
         <div class="voice-card-actions">
-          <button class="preview-voice-btn ${isPlaying ? 'playing' : ''}" data-preview-id="${p.id}" title="Preview Voice">
-            ${isPlaying ? '⏹ Stop' : '▶ Preview'}
+          <button class="preview-voice-btn ${isPlaying ? 'playing' : ''}" data-preview-id="${p.id}" title="Play Kid Voice Sample">
+            ${isPlaying ? '⏹ Stop' : '▶ Play Sample'}
           </button>
           ${deleteBtnHtml}
         </div>
@@ -277,10 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      if (p.category === 'kids-boy' && kidsBoyVoicePersonaList) {
+      if (kidsBoyVoicePersonaList) {
         kidsBoyVoicePersonaList.appendChild(card);
-      } else if (p.category === 'kids-girl' && kidsGirlVoicePersonaList) {
-        kidsGirlVoicePersonaList.appendChild(card);
       } else if (softVoicePersonaList) {
         softVoicePersonaList.appendChild(card);
       }
@@ -289,11 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const activePersona = voice.getCurrentPersona();
     let displayTag = activePersona.name;
     if (activePersona.ageGroup) {
-      displayTag += ` (${activePersona.gender === 'kid-boy' ? 'Boy ' : 'Girl '}${activePersona.ageGroup})`;
-    } else if (activePersona.isUserCloned) {
-      displayTag += ' (Custom)';
-    } else {
-      displayTag += ` (${activePersona.gender})`;
+      displayTag += ` (${activePersona.ageGroup})`;
     }
     currentVoiceNameBadge.textContent = displayTag;
   }
@@ -315,28 +308,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     voice.stopSpeaking();
     currentlyPreviewingId = persona.id;
-    const origId = voice.currentPersonaId;
-    voice.setPersona(persona.id);
     setOrbState('speaking');
     waveformContainer.classList.add('active');
     renderVoicePersonaOptions();
 
-    const sampleMsg = persona.gender === 'kid-boy' ?
-      `Hi! I'm ${persona.name}! I love telling adventurous stories and solving fun math puzzles!` :
-      persona.gender === 'kid-girl' ?
-      `Hello! I'm ${persona.name}! Let's read magical tales and explore the stars together!` :
-      `Hello! I am ${persona.name}, speaking with a soothing and gentle tone.`;
-
-    voice.speak(sampleMsg, 
-      () => {},
-      () => {
-        currentlyPreviewingId = null;
-        setOrbState('idle');
-        waveformContainer.classList.remove('active');
-        voice.setPersona(origId);
-        renderVoicePersonaOptions();
-      }
-    );
+    if (persona.audioFile) {
+      voice.playSampleAudio(
+        () => {},
+        () => {
+          currentlyPreviewingId = null;
+          setOrbState('idle');
+          waveformContainer.classList.remove('active');
+          renderVoicePersonaOptions();
+        }
+      );
+    } else {
+      const sampleMsg = `Hi! I'm ${persona.name}! I love telling adventurous stories and exploring science together!`;
+      voice.speak(sampleMsg, 
+        () => {},
+        () => {
+          currentlyPreviewingId = null;
+          setOrbState('idle');
+          waveformContainer.classList.remove('active');
+          renderVoicePersonaOptions();
+        }
+      );
+    }
   }
 
   function confirmDeleteClonedVoice(personaId) {
