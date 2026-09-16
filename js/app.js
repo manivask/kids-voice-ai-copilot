@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const calendar = new CalendarEngine();
   const stories = new KidsStoryEngine();
   const mathLearning = new MathAndLearningEngine();
+  const aiReasoning = new AIReasoningEngine();
 
   // Initialize Timer Engine with completion callback
   const timer = new TimerEngine((finishedTimer) => {
@@ -60,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const agent = new AgentEngine(calendar, voice, timer, stories, mathLearning);
+  const agent = new AgentEngine(calendar, voice, timer, stories, mathLearning, aiReasoning);
 
   // Initialize Voice Cloner Studio
   const voiceStudio = new VoiceClonerStudio(voice, (userPersona) => {

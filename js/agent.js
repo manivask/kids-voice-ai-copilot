@@ -11,12 +11,13 @@
  */
 
 class AgentEngine {
-  constructor(calendarEngine, voiceEngine, timerEngine, storyEngine, mathLearningEngine) {
+  constructor(calendarEngine, voiceEngine, timerEngine, storyEngine, mathLearningEngine, aiReasoningEngine) {
     this.calendar = calendarEngine;
     this.voice = voiceEngine;
     this.timer = timerEngine;
     this.stories = storyEngine;
     this.mathLearning = mathLearningEngine;
+    this.aiReasoning = aiReasoningEngine || (typeof AIReasoningEngine !== 'undefined' ? new AIReasoningEngine() : null);
   }
 
   /**
@@ -27,6 +28,7 @@ class AgentEngine {
   async processQuery(rawInput) {
     const input = (rawInput || '').trim();
     const clean = input.toLowerCase();
+    const currentLangCode = this.voice ? this.voice.currentLanguageCode : 'en-US';
 
     if (!input) {
       const langConfig = this.voice.getLanguageConfig();
@@ -65,7 +67,19 @@ class AgentEngine {
       return this.handleRiddleQuery();
     }
 
-    // 4. English Vocabulary, Grammar & Science Curiosity Intent Check
+    // 4. AI Logical Reasoning & Knowledge Engine (Earth-Moon distance, astronomy, physics, nature, live web search)
+    if (this.aiReasoning && this.aiReasoning.isReasoningIntent(clean)) {
+      const reasonResult = await this.aiReasoning.solve(input, currentLangCode);
+      if (reasonResult) {
+        return {
+          text: `🧠 **${reasonResult.title}**\n\n${reasonResult.answer}\n\n✨ **Did You Know?**: ${reasonResult.funFact || ''}`,
+          spokenText: reasonResult.spokenAnswer,
+          widgetHtml: this.aiReasoning.renderReasoningCard(reasonResult)
+        };
+      }
+    }
+
+    // 5. English Vocabulary, Grammar & Science Curiosity Intent Check
     if (this.mathLearning && this.mathLearning.isLearningIntent(clean)) {
       const learnResult = this.mathLearning.solveLearning(clean);
       if (learnResult) {
@@ -77,12 +91,12 @@ class AgentEngine {
       }
     }
 
-    // 5. Kids Storytelling & Comprehension Quiz Intent Check
+    // 6. Kids Storytelling & Comprehension Quiz Intent Check
     if (this.isStoryIntent(clean)) {
       return this.handleStoryQuery(clean);
     }
 
-    // 6. Check if user is answering the active Story Comprehension Quiz
+    // 7. Check if user is answering the active Story Comprehension Quiz
     if (this.stories && this.stories.currentActiveQuiz && !this.isTimeIntent(clean) && !this.isTimerIntent(clean)) {
       const evalResult = this.stories.evaluateComprehensionAnswer(clean);
       if (evalResult) {
@@ -95,7 +109,7 @@ class AgentEngine {
       }
     }
 
-    // 7. Voice Calibration & Training Intent Check
+    // 8. Voice Calibration & Training Intent Check
     if (this.isVoiceTrainIntent(clean)) {
       return {
         text: `🎙️ **Voice Calibration Studio**: Let's record and calibrate your unique personal voice profile! Click below to open the guided 8-sentence studio.`,
@@ -104,32 +118,44 @@ class AgentEngine {
       };
     }
 
-    // 8. Timer & Countdown Intent Check
+    // 9. Timer & Countdown Intent Check
     if (this.isTimerIntent(clean)) {
       return this.handleTimerQuery(clean);
     }
 
-    // 9. Time & Clock Intent Check
+    // 10. Time & Clock Intent Check
     if (this.isTimeIntent(clean)) {
       return this.handleTimeQuery(clean);
     }
 
-    // 10. Greetings & Persona Check
+    // 11. Greetings & Persona Check
     if (this.isGreetingIntent(clean)) {
       return this.handleGreetingQuery();
     }
 
-    // 11. Help / Capabilities Check
+    // 12. Help / Capabilities Check
     if (this.isHelpIntent(clean)) {
       return this.handleHelpQuery();
     }
 
-    // 12. Voice Switch / Settings Check
+    // 13. Voice Switch / Settings Check
     if (this.isVoiceIntent(clean)) {
       return this.handleVoiceQuery(clean);
     }
 
-    // 13. General Kid Fallback
+    // 14. Deep AI Reasoning Fallback (Tries live lookup or intelligent breakdown)
+    if (this.aiReasoning) {
+      const fallbackReasoning = await this.aiReasoning.solve(input, currentLangCode);
+      if (fallbackReasoning) {
+        return {
+          text: `🧠 **${fallbackReasoning.title}**\n\n${fallbackReasoning.answer}`,
+          spokenText: fallbackReasoning.spokenAnswer,
+          widgetHtml: this.aiReasoning.renderReasoningCard(fallbackReasoning)
+        };
+      }
+    }
+
+    // 15. General Kid Fallback
     return this.handleFallback(clean);
   }
 
