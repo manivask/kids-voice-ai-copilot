@@ -57,6 +57,11 @@
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
       </button>
 
+      <button class="header-btn flow-btn" id="openEvolutionModalBtn" title="Autonomous AI Evolution & Learning Loop">
+        <span>🧠</span>
+        <span>Evolution</span>
+      </button>
+
       <a href="flow-diagram.html" class="header-btn flow-btn" title="How AI Works (Hand-Drawn Flow Diagram)" style="text-decoration:none;">
         <span>🎨</span>
         <span>Flow</span>
@@ -441,6 +446,84 @@
     </div>
   </div>
 
+  <!-- Autonomous AI Evolution & Self-Learning Circle Modal -->
+  <div class="modal-overlay" id="evolutionModalOverlay">
+    <div class="voice-modal evolution-modal">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:0.6rem;">
+          <span style="font-size:1.6rem;">🧠</span>
+          <div>
+            <h3 style="margin:0; font-size:1.15rem; color:#ffffff;">Autonomous AI Evolution Hub</h3>
+            <p style="margin:0; font-size:0.75rem; color:#a5b4fc;">Continuous Question Capture & Neural Rebuilding Cycle</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="closeEvolutionModalBtn">&times;</button>
+      </div>
+
+      <!-- Live Evolution Loop Status Banner -->
+      <div class="evolution-status-banner">
+        <div class="evolution-status-dot"></div>
+        <div>
+          <div style="font-weight:700; font-size:0.85rem; color:#86efac;">Autonomous Learning Loop Active</div>
+          <div style="font-size:0.72rem; color:#cbd5e1;">Captures unsolved questions, auto-synthesizes logic traces, and re-embeds answers dynamically.</div>
+        </div>
+      </div>
+
+      <!-- Telemetry Metric Cards -->
+      <div class="evolution-metrics-grid">
+        <div class="evolution-metric-card">
+          <span class="metric-val" id="metricCapturedCount">18</span>
+          <span class="metric-lbl">Captured Qs</span>
+        </div>
+        <div class="evolution-metric-card">
+          <span class="metric-val" id="metricSynthesizedCount" style="color:#67e8f9;">12</span>
+          <span class="metric-lbl">Auto-Synthesized</span>
+        </div>
+        <div class="evolution-metric-card">
+          <span class="metric-val" id="metricCyclesCount" style="color:#fde047;">5</span>
+          <span class="metric-lbl">Evolution Cycles</span>
+        </div>
+        <div class="evolution-metric-card">
+          <span class="metric-val" id="metricRebuildTime" style="font-size:0.95rem; color:#f472b6;">Now</span>
+          <span class="metric-lbl">Last Rebuilt</span>
+        </div>
+      </div>
+
+      <!-- Teach Copilot New Knowledge Box -->
+      <div class="teach-ai-box">
+        <h4 style="font-size:0.88rem; font-weight:700; color:#fff; margin-bottom:0.4rem; display:flex; align-items:center; gap:0.4rem;">
+          <span>💡</span> Teach Copilot New Knowledge (Instant Rebuild)
+        </h4>
+        <input 
+          type="text" 
+          id="teachQuestionInput" 
+          class="teach-input" 
+          placeholder="Enter question (e.g. Why do fireflies glow at night?)"
+        />
+        <textarea 
+          id="teachAnswerInput" 
+          class="teach-textarea" 
+          placeholder="Enter kid-friendly answer or key facts..."
+          rows="2"
+        ></textarea>
+        <button class="teach-submit-btn" id="teachSubmitBtn">
+          ⚡ Synthesize & Rebuild AI Knowledge Graph
+        </button>
+      </div>
+
+      <!-- Auto-Learned Knowledge Bank List -->
+      <div class="voice-category-section">
+        <div class="voice-category-title" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>📚 Auto-Learned Knowledge Bank (<span id="learnedBankCount">3</span> items)</span>
+          <button class="small-refresh-btn" id="refreshEvolutionBtn">🔄 Refresh</button>
+        </div>
+        <div class="learned-knowledge-list" id="learnedKnowledgeList">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="js/languages.js"></script>
   <script src="js/voice.js"></script>
@@ -449,6 +532,7 @@
   <script src="js/stories.js"></script>
   <script src="js/math-learning.js"></script>
   <script src="js/ai-reasoning.js"></script>
+  <script src="js/autonomous-learner.js"></script>
   <script src="js/voice-cloner.js"></script>
   <script src="js/agent.js"></script>
   <script src="js/app.js"></script>

@@ -27,12 +27,12 @@ class VoiceEngine {
         ageGroup: 'Age 6-8',
         gender: 'kid-boy',
         category: 'kids-boy',
-        tagline: 'Energetic, Curious & High-Pitched Boy Tone',
+        tagline: 'Energetic, Bright & Cheerful Boy Tone',
         avatarText: '👦',
         pitch: 1.55,
-        rate: 1.05,
+        rate: 1.08,
         voiceIndexOffset: 0,
-        voicePattern: /junior|boy|child|alex|david|guy|daniel/i
+        voicePattern: /zira|jenny|samantha|aria|google|eva/i
       },
       {
         id: 'kid-boy-2',
@@ -40,12 +40,12 @@ class VoiceEngine {
         ageGroup: 'Age 9-12',
         gender: 'kid-boy',
         category: 'kids-boy',
-        tagline: 'Cheerful, Fast-Thinking Adventurer Boy',
+        tagline: 'Adventurous, Fast-Thinking Explorer Boy',
         avatarText: '🎒',
-        pitch: 1.35,
-        rate: 1.00,
+        pitch: 1.38,
+        rate: 1.04,
         voiceIndexOffset: 1,
-        voicePattern: /oliver|george|richard|rishi|david/i
+        voicePattern: /jenny|zira|samantha|victoria|george/i
       },
       {
         id: 'kid-boy-3',
@@ -53,12 +53,12 @@ class VoiceEngine {
         ageGroup: 'Age 5-7',
         gender: 'kid-boy',
         category: 'kids-boy',
-        tagline: 'Cute, Playful & Storytelling Little Boy',
+        tagline: 'Cute, Playful & Storytelling Young Boy',
         avatarText: '🚀',
-        pitch: 1.65,
-        rate: 0.95,
+        pitch: 1.68,
+        rate: 1.02,
         voiceIndexOffset: 2,
-        voicePattern: /guy|mark|daniel|david/i
+        voicePattern: /aria|samantha|zira|jenny/i
       },
 
       // --- Kids Girl Voices (Ages 5-12) ---
@@ -71,7 +71,7 @@ class VoiceEngine {
         tagline: 'Bright, Bubbly & Sweet Young Girl',
         avatarText: '👧',
         pitch: 1.60,
-        rate: 1.02,
+        rate: 1.05,
         voiceIndexOffset: 0,
         voicePattern: /samantha|jenny|zira|karen|aria/i
       },
@@ -83,8 +83,8 @@ class VoiceEngine {
         category: 'kids-girl',
         tagline: 'Clear, Gentle & Expressive Storyteller',
         avatarText: '🌸',
-        pitch: 1.42,
-        rate: 0.94,
+        pitch: 1.45,
+        rate: 0.98,
         voiceIndexOffset: 1,
         voicePattern: /victoria|eva|fiona|susan/i
       },
@@ -96,10 +96,10 @@ class VoiceEngine {
         category: 'kids-girl',
         tagline: 'Joyful, Melodious & Playful Little Girl',
         avatarText: '⭐',
-        pitch: 1.70,
-        rate: 0.98,
+        pitch: 1.72,
+        rate: 1.02,
         voiceIndexOffset: 2,
-        voicePattern: /tessa|moira|veena|catherine/i
+        voicePattern: /tessa|moira|veena|catherine|zira/i
       },
 
       // --- Soft & Gentle Voices ---
@@ -215,7 +215,7 @@ class VoiceEngine {
   }
 
   /**
-   * Intelligently resolves a DISTINCT browser voice for each persona and language
+   * Intelligently resolves an authentically distinct browser voice for each persona and language
    */
   resolveBrowserVoice(persona) {
     if (!this.voices || this.voices.length === 0) {
@@ -229,38 +229,37 @@ class VoiceEngine {
     // 1. Filter voices for current selected language
     let langVoices = this.voices.filter(v => v.lang.toLowerCase().startsWith(langPrefix));
     if (langVoices.length === 0) {
-      // Fallback to English voices if specific language voice not installed on OS
       langVoices = this.voices.filter(v => v.lang.toLowerCase().startsWith('en'));
     }
     if (langVoices.length === 0) {
       langVoices = this.voices;
     }
 
-    const isGirl = persona.gender === 'kid-girl' || persona.gender === 'female';
-    const isBoy = persona.gender === 'kid-boy' || persona.gender === 'male';
+    const isKid = persona.category === 'kids-boy' || persona.category === 'kids-girl';
+    const isAdultMale = persona.gender === 'male' && persona.category !== 'kids-boy';
 
-    const femaleKeywords = /zira|jenny|samantha|karen|victoria|eva|fiona|veena|catherine|clara|aria|female|susan|moira|tessa|sabina|heami|ayumi|kalpana|geetha/i;
+    // High formant voice candidates that sound natural for kids
+    const kidNaturalKeywords = /zira|jenny|samantha|karen|aria|eva|fiona|veena|catherine|clara|tessa|moira|google/i;
     const maleKeywords = /david|mark|guy|george|male|daniel|richard|alex|oliver|rishi|raul|jorge|minho|ichiro|hemant|mohan/i;
 
     let matchedCandidates = [];
 
-    if (isGirl) {
-      matchedCandidates = langVoices.filter(v => femaleKeywords.test(v.name) && !maleKeywords.test(v.name));
+    if (isKid) {
+      // For children (both boys & girls 5-12), prioritize high-formant, clear, energetic voices
+      matchedCandidates = langVoices.filter(v => kidNaturalKeywords.test(v.name));
       if (matchedCandidates.length === 0) {
         matchedCandidates = langVoices.filter(v => !maleKeywords.test(v.name));
       }
-    } else if (isBoy) {
+    } else if (isAdultMale) {
       matchedCandidates = langVoices.filter(v => maleKeywords.test(v.name));
-      if (matchedCandidates.length === 0) {
-        matchedCandidates = langVoices;
-      }
+    } else {
+      matchedCandidates = langVoices.filter(v => kidNaturalKeywords.test(v.name));
     }
 
     if (matchedCandidates.length === 0) {
       matchedCandidates = langVoices;
     }
 
-    // Assign different candidate based on persona's offset to guarantee distinct voices!
     const offset = persona.voiceIndexOffset || 0;
     const selectedVoice = matchedCandidates[offset % matchedCandidates.length] || matchedCandidates[0];
 

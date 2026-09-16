@@ -95,6 +95,23 @@ class AIReasoningEngine {
    * Search offline knowledge base
    */
   matchLocalKnowledge(clean) {
+    // 1. Check dynamic learned knowledge from Autonomous Learner Engine
+    if (this.dynamicLearnedKnowledge && this.dynamicLearnedKnowledge.length > 0) {
+      for (const item of this.dynamicLearnedKnowledge) {
+        if (clean.includes(item.queryPattern) || (item.keywords && item.keywords.length > 0 && item.keywords.every(k => clean.includes(k)))) {
+          return {
+            topic: item.entity || item.queryPattern,
+            category: '🧠 Autonomously Learned Knowledge',
+            answer: `${item.summary}\n\n💡 **Kid Analogy:** ${item.analogy || 'Nature and science work together beautifully!'}`,
+            spokenAnswer: item.spokenAnswer || item.summary.replace(/[*_#`]/g, ''),
+            funFact: item.analogy || 'This concept was learned & verified autonomously by Kids AI Copilot!',
+            source: '🧠 Autonomous Neural Evolution Loop'
+          };
+        }
+      }
+    }
+
+    // 2. Check offline curated knowledge base
     for (const item of this.knowledgeBase) {
       for (const pattern of item.patterns) {
         if (pattern.test(clean)) {
@@ -782,5 +799,13 @@ class AIReasoningEngine {
       }
     ];
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.AIReasoningEngine = AIReasoningEngine;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { AIReasoningEngine };
 }
 

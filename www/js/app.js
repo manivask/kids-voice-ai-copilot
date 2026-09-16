@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const stories = new KidsStoryEngine();
   const mathLearning = new MathAndLearningEngine();
   const aiReasoning = new AIReasoningEngine();
+  const autonomousLearner = new AutonomousLearnerEngine(aiReasoning);
 
   // Initialize Timer Engine with completion callback
   const timer = new TimerEngine((finishedTimer) => {
@@ -631,6 +632,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Process Query with Agent Engine
     const response = await agent.processQuery(query);
 
+    // Autonomous Question Capture & Self-Evolution Cycle
+    if (typeof autonomousLearner !== 'undefined' && autonomousLearner) {
+      autonomousLearner.captureQuestion(query, response);
+    }
+
     if (response.languageChanged) {
       const cfg = window.KIDS_LANGUAGES[response.languageChanged];
       if (cfg) {
@@ -649,7 +655,8 @@ document.addEventListener('DOMContentLoaded', () => {
       sender: 'agent',
       text: response.text,
       spokenText: response.spokenText,
-      widgetHtml: response.widgetHtml
+      widgetHtml: response.widgetHtml,
+      query: query
     });
 
     // Gamification Reward: Award star for learning questions
@@ -677,7 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Append Message to UI
-  function appendMessage({ sender, text, spokenText, widgetHtml }) {
+  function appendMessage({ sender, text, spokenText, widgetHtml, query = '' }) {
     const msgEl = document.createElement('div');
     msgEl.className = `chat-message ${sender}`;
 
@@ -712,11 +719,35 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div>${formatMarkdown(text)}</div>
           ${widgetHtml ? widgetHtml : ''}
+          <div class="feedback-action-bar">
+            <button class="feedback-chip-btn like-feedback-btn" title="Great Answer!">
+              <span>👍</span> Helpful
+            </button>
+            <button class="feedback-chip-btn teach-feedback-btn" title="Teach Copilot or Improve Answer">
+              <span>💡</span> Teach AI
+            </button>
+          </div>
           <div class="message-bubble-time">
             ${timeStr} ${replayHtml}
           </div>
         </div>
       `;
+
+      const likeBtn = msgEl.querySelector('.like-feedback-btn');
+      if (likeBtn) {
+        likeBtn.addEventListener('click', () => {
+          likeBtn.classList.toggle('active');
+          awardStars(1);
+          autonomousLearner.recordFeedback(query || text, true);
+        });
+      }
+
+      const teachBtn = msgEl.querySelector('.teach-feedback-btn');
+      if (teachBtn) {
+        teachBtn.addEventListener('click', () => {
+          openEvolutionModal(query || '');
+        });
+      }
 
       const replayBtn = msgEl.querySelector('.voice-replay-btn');
       if (replayBtn) {
@@ -959,7 +990,102 @@ document.addEventListener('DOMContentLoaded', () => {
     return formatted;
   }
 
+  // ==================== AUTONOMOUS AI EVOLUTION HUB CONTROLLERS ====================
+  const evolutionModalOverlay = document.getElementById('evolutionModalOverlay');
+  const openEvolutionModalBtn = document.getElementById('openEvolutionModalBtn');
+  const closeEvolutionModalBtn = document.getElementById('closeEvolutionModalBtn');
+  const teachQuestionInput = document.getElementById('teachQuestionInput');
+  const teachAnswerInput = document.getElementById('teachAnswerInput');
+  const teachSubmitBtn = document.getElementById('teachSubmitBtn');
+  const refreshEvolutionBtn = document.getElementById('refreshEvolutionBtn');
+  const learnedKnowledgeList = document.getElementById('learnedKnowledgeList');
+  const metricCapturedCount = document.getElementById('metricCapturedCount');
+  const metricSynthesizedCount = document.getElementById('metricSynthesizedCount');
+  const metricCyclesCount = document.getElementById('metricCyclesCount');
+  const metricRebuildTime = document.getElementById('metricRebuildTime');
+  const learnedBankCount = document.getElementById('learnedBankCount');
+
+  function openEvolutionModal(prefillQuestion = '') {
+    if (!evolutionModalOverlay) return;
+    renderEvolutionMetrics();
+    if (prefillQuestion && teachQuestionInput) {
+      teachQuestionInput.value = prefillQuestion;
+      teachAnswerInput?.focus();
+    }
+    evolutionModalOverlay.classList.add('open');
+  }
+
+  function closeEvolutionModal() {
+    if (evolutionModalOverlay) evolutionModalOverlay.classList.remove('open');
+  }
+
+  function renderEvolutionMetrics() {
+    if (!autonomousLearner) return;
+    const metrics = autonomousLearner.getEvolutionMetrics();
+
+    if (metricCapturedCount) metricCapturedCount.textContent = metrics.totalQuestionsCaptured;
+    if (metricSynthesizedCount) metricSynthesizedCount.textContent = metrics.totalAutoSynthesized;
+    if (metricCyclesCount) metricCyclesCount.textContent = metrics.evolutionCycles;
+    if (metricRebuildTime) metricRebuildTime.textContent = metrics.lastRebuildTime || 'Now';
+    if (learnedBankCount) learnedBankCount.textContent = metrics.totalLearnedInBank;
+
+    if (learnedKnowledgeList) {
+      learnedKnowledgeList.innerHTML = '';
+      metrics.learnedItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'learned-knowledge-item';
+        div.innerHTML = `
+          <div class="learned-item-title">
+            <span>✨ ${escapeHtml(item.entity || item.queryPattern)}</span>
+            <span style="font-size:0.68rem; color:#86efac; font-weight:600;">✓ Verified</span>
+          </div>
+          <div class="learned-item-desc">${escapeHtml(item.summary)}</div>
+          <div style="font-size:0.7rem; color:#94a3b8; margin-top:0.2rem;">
+            💡 <em>${escapeHtml(item.analogy || '')}</em>
+          </div>
+        `;
+        learnedKnowledgeList.appendChild(div);
+      });
+    }
+  }
+
+  if (openEvolutionModalBtn) openEvolutionModalBtn.addEventListener('click', () => openEvolutionModal());
+  if (closeEvolutionModalBtn) closeEvolutionModalBtn.addEventListener('click', closeEvolutionModal);
+  if (refreshEvolutionBtn) refreshEvolutionBtn.addEventListener('click', renderEvolutionMetrics);
+
+  if (teachSubmitBtn) {
+    teachSubmitBtn.addEventListener('click', () => {
+      const q = (teachQuestionInput?.value || '').trim();
+      const a = (teachAnswerInput?.value || '').trim();
+      if (!q || !a) {
+        alert('Please enter both a question and a kid-friendly explanation!');
+        return;
+      }
+
+      teachSubmitBtn.disabled = true;
+      teachSubmitBtn.textContent = '⏳ Synthesizing & Burning Knowledge...';
+
+      setTimeout(() => {
+        autonomousLearner.teachNewConcept(q, a);
+        renderEvolutionMetrics();
+        awardStars(2);
+        teachQuestionInput.value = '';
+        teachAnswerInput.value = '';
+        teachSubmitBtn.disabled = false;
+        teachSubmitBtn.textContent = '⚡ Synthesize & Rebuild AI Knowledge Graph';
+        closeEvolutionModal();
+
+        appendMessage({
+          sender: 'agent',
+          text: `🎉 **AI Knowledge Graph Rebuilt Successfully!**\n\nI have autonomously synthesized **"${q}"** and embedded it into my active neural reasoning engine! Test asking me now!`,
+          spokenText: `I have learned your new concept and updated my knowledge graph!`
+        });
+      }, 500);
+    });
+  }
+
   // Initial renders
   renderVoicePersonaOptions();
   renderLanguageOptions();
+  renderEvolutionMetrics();
 });
