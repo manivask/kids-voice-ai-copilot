@@ -18,42 +18,42 @@ class VoiceEngine {
     this.currentUtterance = null;
     this.liveMeterFrame = null;
 
-    // Distinct Voice Persona catalog for Kids (Ages 5-12) & Adults
+    // Natural AI Kid Voice Catalog (Modeled after kid-voices-ai.com: 3 Boys & 3 Girls)
     this.personas = [
-      // --- Kids Boy Voices (Ages 5-12) ---
+      // ==================== 👦 3 AI BOY VOICES ====================
       {
-        id: 'kid-boy-1',
-        name: 'Leo Junior',
+        id: 'kid-boy-leo',
+        name: 'Leo (Boy 6-8)',
         ageGroup: 'Age 6-8',
         gender: 'kid-boy',
         category: 'kids-boy',
-        tagline: 'Energetic, Bright & Cheerful Boy Tone',
+        tagline: 'Energetic, Curious & High-Pitched Adventurer Boy',
         avatarText: '👦',
-        pitch: 1.55,
-        rate: 1.08,
+        pitch: 1.58,
+        rate: 1.10,
         voiceIndexOffset: 0,
         voicePattern: /zira|jenny|samantha|aria|google|eva/i
       },
       {
-        id: 'kid-boy-2',
-        name: 'Toby',
+        id: 'kid-boy-oliver',
+        name: 'Oliver (Boy 9-12)',
         ageGroup: 'Age 9-12',
         gender: 'kid-boy',
         category: 'kids-boy',
-        tagline: 'Adventurous, Fast-Thinking Explorer Boy',
+        tagline: 'Smart, Fast-Thinking & Cheerful Explorer Boy',
         avatarText: '🎒',
-        pitch: 1.38,
-        rate: 1.04,
+        pitch: 1.40,
+        rate: 1.05,
         voiceIndexOffset: 1,
         voicePattern: /jenny|zira|samantha|victoria|george/i
       },
       {
-        id: 'kid-boy-3',
-        name: 'Charlie',
+        id: 'kid-boy-charlie',
+        name: 'Charlie (Boy 5-7)',
         ageGroup: 'Age 5-7',
         gender: 'kid-boy',
         category: 'kids-boy',
-        tagline: 'Cute, Playful & Storytelling Young Boy',
+        tagline: 'Cute, Playful & Animated Storytelling Young Boy',
         avatarText: '🚀',
         pitch: 1.68,
         rate: 1.02,
@@ -61,75 +61,49 @@ class VoiceEngine {
         voicePattern: /aria|samantha|zira|jenny/i
       },
 
-      // --- Kids Girl Voices (Ages 5-12) ---
+      // ==================== 👧 3 AI GIRL VOICES ====================
       {
-        id: 'kid-girl-1',
-        name: 'Maya',
+        id: 'kid-girl-sadie',
+        name: 'Sadie (Girl 6-8)',
         ageGroup: 'Age 6-8',
         gender: 'kid-girl',
         category: 'kids-girl',
-        tagline: 'Bright, Bubbly & Sweet Young Girl',
+        tagline: 'Bright, Bubbly & Joyful Young Girl (KidVoice Style)',
         avatarText: '👧',
-        pitch: 1.60,
-        rate: 1.05,
+        pitch: 1.62,
+        rate: 1.06,
         voiceIndexOffset: 0,
         voicePattern: /samantha|jenny|zira|karen|aria/i
       },
       {
-        id: 'kid-girl-2',
-        name: 'Lily',
-        ageGroup: 'Age 9-12',
-        gender: 'kid-girl',
-        category: 'kids-girl',
-        tagline: 'Clear, Gentle & Expressive Storyteller',
-        avatarText: '🌸',
-        pitch: 1.45,
-        rate: 0.98,
-        voiceIndexOffset: 1,
-        voicePattern: /victoria|eva|fiona|susan/i
-      },
-      {
-        id: 'kid-girl-3',
-        name: 'Emma',
+        id: 'kid-girl-shygirl',
+        name: 'Shygirl (Girl 5-7)',
         ageGroup: 'Age 5-7',
         gender: 'kid-girl',
         category: 'kids-girl',
-        tagline: 'Joyful, Melodious & Playful Little Girl',
-        avatarText: '⭐',
-        pitch: 1.72,
+        tagline: 'Gentle, Soft-Spoken & Adorable Little Girl (KidVoice Style)',
+        avatarText: '🌸',
+        pitch: 1.70,
+        rate: 0.96,
+        voiceIndexOffset: 1,
+        voicePattern: /victoria|eva|fiona|susan|zira/i
+      },
+      {
+        id: 'kid-girl-cookie',
+        name: 'Cookie (Girl 9-12)',
+        ageGroup: 'Age 9-12',
+        gender: 'kid-girl',
+        category: 'kids-girl',
+        tagline: 'Melodious, Expressive & Friendly Kid Storyteller',
+        avatarText: '🍪',
+        pitch: 1.48,
         rate: 1.02,
         voiceIndexOffset: 2,
-        voicePattern: /tessa|moira|veena|catherine|zira/i
-      },
-
-      // --- Soft & Gentle Voices ---
-      {
-        id: 'soft-female-1',
-        name: 'Serena',
-        gender: 'female',
-        category: 'soft',
-        tagline: 'Gentle, Soothing & Relaxed',
-        avatarText: 'SR',
-        pitch: 1.10,
-        rate: 0.88,
-        voiceIndexOffset: 3,
-        voicePattern: /zira|jenny|samantha/i
-      },
-      {
-        id: 'soft-male-1',
-        name: 'River',
-        gender: 'male',
-        category: 'soft',
-        tagline: 'Soft-Spoken, Calm & Deep',
-        avatarText: 'RV',
-        pitch: 0.76,
-        rate: 0.86,
-        voiceIndexOffset: 3,
-        voicePattern: /david|george|guy/i
+        voicePattern: /tessa|moira|veena|catherine|jenny/i
       }
     ];
 
-    this.currentPersonaId = 'kid-boy-1';
+    this.currentPersonaId = 'kid-boy-leo';
     this.initSpeechRecognition();
     this.loadVoices();
 
