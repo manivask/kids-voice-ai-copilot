@@ -37,6 +37,12 @@
     </div>
 
     <div class="header-actions">
+      <!-- Star Reward Badge -->
+      <div class="header-btn star-badge-btn" id="starBadgeBtn" title="Stars Earned for Learning!">
+        <span>⭐</span>
+        <span id="starCountDisplay" style="font-weight:700; color:#fde047;">0</span>
+      </div>
+
       <!-- Language Selector Button -->
       <button class="header-btn lang-btn" id="openLangModalBtn" title="Change Language">
         <span id="currentLangFlag">🇺🇸</span>
@@ -50,6 +56,11 @@
         <span id="currentVoiceNameBadge">Leo Junior (Boy 6-8)</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
       </button>
+
+      <a href="flow-diagram.html" class="header-btn flow-btn" title="How AI Works (Hand-Drawn Flow Diagram)" style="text-decoration:none;">
+        <span>🎨</span>
+        <span>Flow</span>
+      </a>
 
       <button class="header-btn calibrate-btn" id="openVoiceStudioBtn" title="Record in Voice Studio">
         <span>🎙️</span>
@@ -105,8 +116,59 @@
 
       <h2 class="hero-title" id="heroTitle">What shall we learn today? 🚀</h2>
       <p class="hero-subtitle" id="heroSubtitle">
-        Tap the microphone or choose a prompt to hear magical stories, solve math, crack animal riddles, or switch languages!
+        Tap the glowing orb to speak, or pick an exciting topic below to start exploring!
       </p>
+
+      <!-- Kids Discovery Explorer Cards -->
+      <div class="discovery-hub-grid">
+        <div class="discovery-card" data-prompt="What is the distance between Earth and Moon?">
+          <span class="discovery-icon">🌕</span>
+          <div class="discovery-info">
+            <h4>Space Explorer</h4>
+            <p>Distance to Moon & Planets</p>
+          </div>
+        </div>
+
+        <div class="discovery-card" data-prompt="What is 125 times 8?">
+          <span class="discovery-icon">🔢</span>
+          <div class="discovery-info">
+            <h4>Math Gym</h4>
+            <p>Arithmetic & Sequences</p>
+          </div>
+        </div>
+
+        <div class="discovery-card" data-prompt="Tell me a short story">
+          <span class="discovery-icon">📖</span>
+          <div class="discovery-info">
+            <h4>Story Land</h4>
+            <p>Magical Tales & Quizzes</p>
+          </div>
+        </div>
+
+        <div class="discovery-card" data-prompt="Tell me an animal riddle">
+          <span class="discovery-icon">🧩</span>
+          <div class="discovery-info">
+            <h4>Brain Teasers</h4>
+            <p>Animal Riddles & Puzzles</p>
+          </div>
+        </div>
+
+        <div class="discovery-card" data-prompt="How fast is the speed of light?">
+          <span class="discovery-icon">⚡</span>
+          <div class="discovery-info">
+            <h4>Science Lab</h4>
+            <p>Physics, Nature & Biology</p>
+          </div>
+        </div>
+
+        <div class="discovery-card" data-prompt="Speak in Tamil">
+          <span class="discovery-icon">🌐</span>
+          <div class="discovery-info">
+            <h4>12 Languages</h4>
+            <p>Tamil, Spanish, Hindi...</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Active Chat Viewport -->
@@ -114,17 +176,17 @@
 
     <!-- Quick Prompt Suggestions for Kids -->
     <div class="quick-prompts" id="quickPromptsContainer">
+      <button class="prompt-chip" data-prompt="What is the distance between Earth and Moon?">
+        <span>🌕</span> Earth-Moon Distance
+      </button>
       <button class="prompt-chip" data-prompt="Tell me a short story">
         <span>⚡</span> Short Story (1m)
-      </button>
-      <button class="prompt-chip" data-prompt="Tell me a long adventure story">
-        <span>📚</span> Long Adventure
       </button>
       <button class="prompt-chip" data-prompt="What is 45 plus 38?">
         <span>🔢</span> Math: 45 + 38
       </button>
       <button class="prompt-chip" data-prompt="If 4 friends share 24 candies, how many does each get?">
-        <span>🍬</span> Candy Sharing Math
+        <span>🍬</span> Candy Sharing
       </button>
       <button class="prompt-chip" data-prompt="Tell me an animal riddle">
         <span>🧩</span> Animal Riddle
@@ -209,6 +271,11 @@
       <span style="font-size: 1.25rem;">🌐</span>
       <span>Language</span>
     </button>
+
+    <a href="flow-diagram.html" class="nav-tab-item" style="text-decoration:none;">
+      <span style="font-size: 1.25rem;">🎨</span>
+      <span>How It Works</span>
+    </a>
   </nav>
 
   <!-- Language Selection Modal Overlay -->

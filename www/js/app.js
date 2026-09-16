@@ -652,6 +652,11 @@ document.addEventListener('DOMContentLoaded', () => {
       widgetHtml: response.widgetHtml
     });
 
+    // Gamification Reward: Award star for learning questions
+    if (response.widgetHtml || response.text.length > 50) {
+      awardStars(1);
+    }
+
     sendBtn.disabled = false;
 
     // Voice Feedback (TTS)
@@ -872,6 +877,68 @@ document.addEventListener('DOMContentLoaded', () => {
       handleSend(prompt);
     });
   });
+
+  // Discovery Hub Cards (Space, Math Gym, Science, Story, Riddles, Languages)
+  document.querySelectorAll('.discovery-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const prompt = card.getAttribute('data-prompt');
+      if (prompt) {
+        handleSend(prompt);
+      }
+    });
+  });
+
+  // Star Rewards Gamification System
+  const starCountDisplay = document.getElementById('starCountDisplay');
+  const starBadgeBtn = document.getElementById('starBadgeBtn');
+  let currentStars = parseInt(localStorage.getItem('kids_copilot_stars') || '0', 10);
+  if (starCountDisplay) starCountDisplay.textContent = currentStars;
+
+  function awardStars(amount = 1) {
+    currentStars += amount;
+    localStorage.setItem('kids_copilot_stars', currentStars);
+    if (starCountDisplay) {
+      starCountDisplay.textContent = currentStars;
+      starCountDisplay.parentElement.classList.add('star-bump');
+      setTimeout(() => starCountDisplay.parentElement?.classList.remove('star-bump'), 600);
+    }
+    playCelebrationChime();
+  }
+
+  if (starBadgeBtn) {
+    starBadgeBtn.addEventListener('click', () => {
+      const badgeTitle = currentStars >= 20 ? "👑 Grand AI Master" :
+                         currentStars >= 10 ? "🏆 Super Explorer" :
+                         currentStars >= 5  ? "🌟 Curious Learner" : "🌱 Junior Star";
+      appendMessage({
+        sender: 'agent',
+        text: `⭐ **Your Star Achievements** ⭐\n\n- **Total Stars**: **${currentStars} Stars** 🌟\n- **Current Rank**: **${badgeTitle}** 🏅\n\nKeep asking questions about space, solving math puzzles, and exploring stories to earn more stars!`,
+        spokenText: `You have earned ${currentStars} stars! Your rank is ${badgeTitle}!`
+      });
+    });
+  }
+
+  // Web Audio API Gentle Star Chime Sound
+  function playCelebrationChime() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.09);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + idx * 0.09);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.09 + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + idx * 0.09);
+        osc.stop(ctx.currentTime + idx * 0.09 + 0.3);
+      });
+    } catch (err) {}
+  }
 
   // Helper text formatters
   function escapeHtml(str) {

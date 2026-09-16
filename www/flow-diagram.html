@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Kids AI Copilot Works - Hand-Drawn Agent Architecture & Flow Diagram</title>
+  <meta name="description" content="Detailed hand-drawn architectural flow diagram explaining how the Kids Voice AI Copilot processes queries, performs multi-step logical reasoning, and synthesizes kid voices.">
+
+  <!-- Google Fonts: Handwritten & Sketch Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-paper: #0f172a;
+      --paper-grid: rgba(255, 255, 255, 0.04);
+      --ink-white: #f8fafc;
+      --ink-yellow: #fde047;
+      --ink-cyan: #38bdf8;
+      --ink-pink: #f472b6;
+      --ink-green: #4ade80;
+      --ink-purple: #c084fc;
+      --ink-orange: #fb923c;
+      --card-bg: rgba(30, 41, 59, 0.75);
+      --border-sketch: 2px dashed rgba(255, 255, 255, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #0b0f19;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15), transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.15), transparent 40%),
+        linear-gradient(var(--paper-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--paper-grid) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+      color: var(--ink-white);
+      font-family: 'Patrick Hand', cursive, sans-serif;
+      min-height: 100vh;
+      padding: 1.5rem 1rem 4rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    /* Header & Navigation */
+    .top-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px dashed rgba(255, 255, 255, 0.15);
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(99, 102, 241, 0.2);
+      border: 2px solid #818cf8;
+      color: #e0e7ff;
+      padding: 0.5rem 1.2rem;
+      border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+      text-decoration: none;
+      font-size: 1.25rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+
+    .back-btn:hover {
+      background: #6366f1;
+      color: #fff;
+      transform: scale(1.05) rotate(-1deg);
+    }
+
+    .title-section {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .title-section h1 {
+      font-family: 'Caveat', cursive;
+      font-size: 3.2rem;
+      color: var(--ink-yellow);
+      text-shadow: 0 0 20px rgba(253, 224, 71, 0.3);
+      line-height: 1.1;
+      transform: rotate(-1deg);
+    }
+
+    .title-section p {
+      font-size: 1.35rem;
+      color: #94a3b8;
+      margin-top: 0.5rem;
+    }
+
+    .sketch-badge {
+      display: inline-block;
+      background: rgba(244, 114, 182, 0.15);
+      border: 2px dashed var(--ink-pink);
+      color: var(--ink-pink);
+      padding: 0.25rem 0.85rem;
+      border-radius: 20px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-top: 0.6rem;
+    }
+
+    /* Interactive Simulation Bar */
+    .simulator-box {
+      background: rgba(15, 23, 42, 0.85);
+      border: 2px solid #6366f1;
+      border-radius: 255px 25px 225px 25px/25px 225px 25px 255px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 3rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(99, 102, 241, 0.15);
+    }
+
+    .sim-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .sim-title {
+      font-size: 1.4rem;
+      color: var(--ink-cyan);
+      font-weight: 700;
+    }
+
+    .sim-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .sim-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px dashed rgba(255, 255, 255, 0.3);
+      color: #e2e8f0;
+      padding: 0.35rem 0.85rem;
+      border-radius: 16px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .sim-pill:hover, .sim-pill.active {
+      background: #6366f1;
+      color: #fff;
+      border-color: #818cf8;
+      transform: translateY(-2px);
+    }
+
+    .sim-status {
+      font-size: 1.2rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+      padding: 0.5rem;
+      border-left: 3px solid var(--ink-yellow);
+      background: rgba(253, 224, 71, 0.08);
+      border-radius: 0 8px 8px 0;
+    }
+
+    /* Flow Diagram Grid */
+    .flow-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      position: relative;
+    }
+
+    /* Hand-Drawn Step Cards */
+    .flow-card {
+      background: var(--card-bg);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+      padding: 1.5rem;
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 4px 6px 0px rgba(0, 0, 0, 0.4);
+    }
+
+    .flow-card.highlighted {
+      border-color: var(--ink-yellow);
+      background: rgba(30, 41, 59, 0.95);
+      box-shadow: 0 0 25px rgba(253, 224, 71, 0.35), 6px 8px 0px rgba(253, 224, 71, 0.5);
+      transform: scale(1.02);
+    }
+
+    .flow-card:nth-child(1) { border-color: var(--ink-cyan); transform: rotate(-0.4deg); }
+    .flow-card:nth-child(2) { border-color: var(--ink-pink); transform: rotate(0.6deg); }
+    .flow-card:nth-child(3) { border-color: var(--ink-yellow); transform: rotate(-0.5deg); }
+    .flow-card:nth-child(4) { border-color: var(--ink-green); transform: rotate(0.3deg); }
+    .flow-card:nth-child(5) { border-color: var(--ink-purple); transform: rotate(-0.4deg); }
+    .flow-card:nth-child(6) { border-color: var(--ink-orange); transform: rotate(0.5deg); }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.8rem;
+    }
+
+    .step-badge {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 0.2rem 0.8rem;
+      border-radius: 14px;
+    }
+
+    .card-icon-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .card-icon {
+      font-size: 2.2rem;
+    }
+
+    .card-title {
+      font-family: 'Caveat', cursive;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card-body-text {
+      font-size: 1.25rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    /* Sub-engines multi-column */
+    .engines-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .sub-engine-box {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px dashed rgba(255, 255, 255, 0.3);
+      border-radius: 16px;
+      padding: 0.85rem 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .sub-engine-box:hover {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: #818cf8;
+      transform: translateY(-2px);
+    }
+
+    .sub-engine-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--ink-yellow);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .sub-engine-desc {
+      font-size: 1.05rem;
+      color: #94a3b8;
+      line-height: 1.35;
+    }
+
+    /* Hand-Drawn Down Arrow */
+    .flow-arrow-down {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-yellow);
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      margin: -0.5rem 0;
+      gap: 0.2rem;
+    }
+
+    .arrow-icon {
+      font-size: 2.2rem;
+      animation: bounceArrow 2s infinite ease-in-out;
+    }
+
+    @keyframes bounceArrow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(6px); }
+    }
+
+    /* Summary Note */
+    .chalkboard-footer {
+      margin-top: 3rem;
+      background: rgba(30, 41, 59, 0.9);
+      border: 3px dashed var(--ink-green);
+      border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+      padding: 1.75rem;
+      text-align: center;
+    }
+
+    .chalkboard-footer h3 {
+      font-family: 'Caveat', cursive;
+      font-size: 2.3rem;
+      color: var(--ink-green);
+      margin-bottom: 0.5rem;
+    }
+
+    .chalkboard-footer p {
+      font-size: 1.3rem;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+      .title-section h1 { font-size: 2.4rem; }
+      .title-section p { font-size: 1.15rem; }
+      .card-title { font-size: 1.7rem; }
+      .engines-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Navigation -->
+    <div class="top-nav-bar">
+      <a href="index.html" class="back-btn">
+        <span>⬅️</span> Back to Kids AI Copilot
+      </a>
+      <div style="font-size: 1.4rem; color: #a5b4fc; font-weight: 700;">
+        🎨 Architecture Sketchbook
+      </div>
+    </div>
+
+    <!-- Title Header -->
+    <div class="title-section">
+      <h1>How Kids Voice AI Copilot Works! 🤖🧠</h1>
+      <p>A hand-drawn peek behind the scenes — from a child's voice into smart AI reasoning & storytelling!</p>
+      <span class="sketch-badge">✨ 100% Kid-Safe & Offline-First Intelligence</span>
+    </div>
+
+    <!-- Interactive Simulator -->
+    <div class="simulator-box">
+      <div class="sim-header">
+        <span class="sim-title">⚡ Try an Interactive Query Simulation:</span>
+        <div class="sim-buttons">
+          <button class="sim-pill active" onclick="simulateFlow('moon')">🌕 Earth-Moon Distance</button>
+          <button class="sim-pill" onclick="simulateFlow('math')">🔢 Math Problem (45 × 12)</button>
+          <button class="sim-pill" onclick="simulateFlow('story')">📖 Story & Quiz</button>
+          <button class="sim-pill" onclick="simulateFlow('tamil')">🇮🇳 Speak in Tamil</button>
+        </div>
+      </div>
+      <div class="sim-status" id="simStatusText">
+        👉 Tap any simulation query above to see how data flows through each step in the agent pipeline!
+      </div>
+    </div>
+
+    <!-- The 6 Hand-Drawn Flow Steps -->
+    <div class="flow-chart">
+
+      <!-- STEP 1: INPUT CAPTURE -->
+      <div class="flow-card" id="step1Card">
+        <div class="card-top">
+          <div class="card-icon-title">
+            <span class="card-icon">🎙️⌨️</span>
+            <h2 class="card-title">Step 1: Kid Speech / Text Input</h2>
+          </div>
+          <span class="step-badge">Phase 1</span>
+        </div>
+        <p class="card-body-text">
+          A child asks a question by tapping the <strong>Glowing Orb</strong> (Web Speech Recognition API) or typing in the chatbox. Supports natural accents and speech across <strong>12 languages</strong> (English, Tamil, Spanish, Korean, Japanese, Hindi, etc.).
+        </p>
+      </div>
+
+      <div class="flow-arrow-down">
+        <span>Speech To Text Stream</span>
+        <span class="arrow-icon">⬇️</span>
+      </div>
+
+      <!-- STEP 2: LANGUAGE NORMALIZER & INTENT PARSER -->
+      <div class="flow-card" id="step2Card">
+        <div class="card-top">
+          <div class="card-icon-title">
+            <span class="card-icon">🌐🔤</span>
+            <h2 class="card-title">Step 2: Language Detector & Intent Router</h2>
+          </div>
+          <span class="step-badge">Phase 2</span>
+        </div>
+        <p class="card-body-text">
+          The <code>AgentEngine</code> normalizes the text and detects dynamic language switch requests (e.g. <em>"Speak in Tamil"</em> or <em>"Habla en español"</em>). It then classifies the inquiry into specialized domains: <strong>Math</strong>, <strong>Science & Astronomy</strong>, <strong>Storytelling</strong>, <strong>Riddles</strong>, or <strong>Timer</strong>.
+        </p>
+      </div>
+
+      <div class="flow-arrow-down">
+        <span>Routed to Specialized Engine</span>
+        <span class="arrow-icon">⬇️</span>
+      </div>
+
+      <!-- STEP 3: SPECIALIZED REASONING ENGINES -->
+      <div class="flow-card" id="step3Card">
+        <div class="card-top">
+          <div class="card-icon-title">
+            <span class="card-icon">⚙️🧠</span>
+            <h2 class="card-title">Step 3: Five Specialized Intelligence Cores</h2>
+          </div>
+          <span class="step-badge">Phase 3</span>
+        </div>
+        <p class="card-body-text">
+          The inquiry is dispatched to the corresponding specialized core:
+        </p>
+        <div class="engines-grid">
+          <div class="sub-engine-box">
+            <div class="sub-engine-title">🌌 AI Reasoning Core</div>
+            <div class="sub-engine-desc">Calculates celestial distances (Earth-Moon ~384,400 km), gravity, speed of light, and physics principles.</div>
+          </div>
+          <div class="sub-engine-box">
+            <div class="sub-engine-title">🔢 Math & Logic Engine</div>
+            <div class="sub-engine-desc">Solves multi-step arithmetic, fractions, sequence patterns (2, 4, 8, 16 ➔ 32), and word problems.</div>
+          </div>
+          <div class="sub-engine-box">
+            <div class="sub-engine-title">📖 Story & Quiz Core</div>
+            <div class="sub-engine-desc">Loads short, medium, or long stories and evaluates comprehension answers with star badges.</div>
+          </div>
+          <div class="sub-engine-box">
+            <div class="sub-engine-title">🌐 Live Web Fallback</div>
+            <div class="sub-engine-desc">Real-time Wikipedia Encyclopedia lookup for curiosity questions outside the curated base.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-arrow-down">
+        <span>4-Step AI Reasoning Deduction</span>
+        <span class="arrow-icon">⬇️</span>
+      </div>
+
+      <!-- STEP 4: 4-STEP THINKING TRACE -->
+      <div class="flow-card" id="step4Card">
+        <div class="card-top">
+          <div class="card-icon-title">
+            <span class="card-icon">💭📐</span>
+            <h2 class="card-title">Step 4: Transparent 4-Step Thinking Process</h2>
+          </div>
+          <span class="step-badge">Phase 4</span>
+        </div>
+        <p class="card-body-text">
+          Before formulating the final answer, the AI generates a transparent 4-stage thinking trace for the child:
+          <br>1. 🎯 <strong>Goal Identification</strong> (What is being asked?)
+          <br>2. 🔍 <strong>Fact Retrieval</strong> (What laws/constants apply?)
+          <br>3. 📐 <strong>Reasoning & Verification</strong> (Checking numbers, metric vs. imperial units)
+          <br>4. 💡 <strong>Kid Formulation</strong> (Converting to inspiring analogies, e.g. "30 Earths in a row")
+        </p>
+      </div>
+
+      <div class="flow-arrow-down">
+        <span>Voice Pitch & Rate Modulation</span>
+        <span class="arrow-icon">⬇️</span>
+      </div>
+
+      <!-- STEP 5: VOICE SYNTHESIS -->
+      <div class="flow-card" id="step5Card">
+        <div class="card-top">
+          <div class="card-icon-title">
+            <span class="card-icon">🧒👧🗣️</span>
+            <h2 class="card-title">Step 5: Distinct Kids Voice Synthesis</h2>
+          </div>
+          <span class="step-badge">Phase 5</span>
+        </div>
+        <p class="card-body-text">
+          The <code>VoiceEngine</code> applies individual vocal personality curves (pitch from <strong>1.35x to 1.70x</strong> and calibrated speed) for boys and girls (<strong>Leo Junior</strong>, <strong>Charlie</strong>, <strong>Toby</strong>, <strong>Emma</strong>, <strong>Maya</strong>, <strong>Lily</strong>).
+        </p>
+      </div>
+
+      <div class="flow-arrow-down">
+        <span>Render to Screen & Audio Speaker</span>
+        <span class="arrow-icon">⬇️</span>
+      </div>
+
+      <!-- STEP 6: OUTPUT & REWARD -->
+      <div class="flow-card" id="step6Card">
+        <div class="card-top">
+          <div class="card-icon-title">
+            <span class="card-icon">⭐🎉📱</span>
+            <h2 class="card-title">Step 6: Rich Interactive Card & Star Reward</h2>
+          </div>
+          <span class="step-badge">Phase 6</span>
+        </div>
+        <p class="card-body-text">
+          The UI renders the animated thinking card, key metric pills, and celebratory audio chimes. Star badges (⭐) are awarded and stored in local progress to keep learning fun and rewarding!
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Bottom Hand-Drawn Chalkboard Summary -->
+    <div class="chalkboard-footer">
+      <h3>🌟 Summary: Why This Architecture Works for Kids</h3>
+      <p>
+        By combining <strong>offline-first verified scientific logic</strong> with <strong>dynamic voice pitch modulation</strong>, <strong>multilingual fluency</strong>, and <strong>transparent thinking cards</strong>, the agent transforms a simple query into an exciting, educational discovery adventure!
+      </p>
+      <div style="margin-top: 1.25rem;">
+        <a href="index.html" class="back-btn" style="display:inline-flex;">
+          🚀 Open Kids AI Copilot & Try It Now
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function simulateFlow(type) {
+      document.querySelectorAll('.sim-pill').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const cards = [
+        document.getElementById('step1Card'),
+        document.getElementById('step2Card'),
+        document.getElementById('step3Card'),
+        document.getElementById('step4Card'),
+        document.getElementById('step5Card'),
+        document.getElementById('step6Card')
+      ];
+
+      cards.forEach(c => c.classList.remove('highlighted'));
+
+      const status = document.getElementById('simStatusText');
+
+      if (type === 'moon') {
+        status.innerHTML = `🌕 <strong>Simulating: "What is the distance between Earth and Moon?"</strong><br>➔ <strong>Step 1</strong>: Voice captured ➔ <strong>Step 2</strong>: Routed to Astronomy ➔ <strong>Step 3</strong>: Retreived 384,400 km / 238,855 mi ➔ <strong>Step 4</strong>: Generated 4 thinking steps (30 Earths analogy) ➔ <strong>Step 5</strong>: Synthesized via Leo Junior (Pitch 1.55x) ➔ <strong>Step 6</strong>: Displayed metric pills & +1 Star!`;
+      } else if (type === 'math') {
+        status.innerHTML = `🔢 <strong>Simulating: "What is 45 × 12?"</strong><br>➔ <strong>Step 1</strong>: Math expression parsed ➔ <strong>Step 2</strong>: Math intent triggered ➔ <strong>Step 3</strong>: Computed 45 × 10 = 450, 45 × 2 = 90 ➔ Answer = 540 ➔ <strong>Step 4</strong>: Step-by-step arithmetic card rendered ➔ <strong>Step 5</strong>: Voice read aloud ➔ <strong>Step 6</strong>: Star Badge awarded!`;
+      } else if (type === 'story') {
+        status.innerHTML = `📖 <strong>Simulating: "Tell me a short kids story"</strong><br>➔ <strong>Step 1</strong>: Story intent recognized ➔ <strong>Step 2</strong>: Story Land triggered ➔ <strong>Step 3</strong>: "The Golden Axe of Truth" loaded ➔ <strong>Step 4</strong>: Interactive comprehension quiz prepared ➔ <strong>Step 5</strong>: Read aloud in gentle storyteller voice ➔ <strong>Step 6</strong>: Comprehension quiz interactive card presented!`;
+      } else if (type === 'tamil') {
+        status.innerHTML = `🇮🇳 <strong>Simulating: "Speak in Tamil / தமிழில் பேசு"</strong><br>➔ <strong>Step 1</strong>: Multi-lingual voice prompt ➔ <strong>Step 2</strong>: Language switched to 'ta-IN' ➔ <strong>Step 3</strong>: Tamil greetings & stories loaded ➔ <strong>Step 4</strong>: Speech synthesized with Tamil phonetic modulation ➔ <strong>Step 5</strong>: Dynamic greeting spoken: "வணக்கம்! நான் உங்கள் கிட்ஸ் AI உதவியாளர்!"`;
+      }
+
+      // Animate step by step
+      let delay = 0;
+      cards.forEach((card, idx) => {
+        setTimeout(() => {
+          card.classList.add('highlighted');
+        }, delay);
+        delay += 300;
+      });
+    }
+  </script>
+</body>
+</html>
