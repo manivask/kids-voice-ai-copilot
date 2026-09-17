@@ -27,11 +27,18 @@
   <!-- Top App Header for Kids -->
   <header class="app-header">
     <div class="brand-section">
+      <!-- 3-Dash Hamburger Menu Button -->
+      <button class="hamburger-menu-btn" id="sidebarToggleBtn" title="Open Menu" aria-label="Open Menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+
       <div class="brand-icon-wrapper">
-        <span style="font-size: 1.6rem;">🤖</span>
+        <span style="font-size: 1.5rem;">🤖</span>
       </div>
       <div class="brand-text">
-        <h1>Kids AI Copilot</h1>
+        <h1>Kids Learning AI</h1>
         <p>Stories • Math • Science • Languages (Ages 5-12)</p>
       </div>
     </div>
@@ -43,40 +50,179 @@
         <span id="starCountDisplay" style="font-weight:700; color:#fde047;">0</span>
       </div>
 
-      <!-- Language Selector Button -->
-      <button class="header-btn lang-btn" id="openLangModalBtn" title="Change Language">
-        <span id="currentLangFlag">🇺🇸</span>
-        <span id="currentLangName">English</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
-      </button>
-
-      <!-- Kids Voice Selector Button -->
-      <button class="header-btn" id="openVoiceModalBtn" title="Kid Voice Settings">
-        <span class="voice-badge-indicator"></span>
-        <span id="currentVoiceNameBadge">👦 AI Kid Boy Voice</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
-      </button>
-
-      <button class="header-btn flow-btn" id="openEvolutionModalBtn" title="Autonomous AI Evolution & Learning Loop">
-        <span>🧠</span>
-        <span>Evolution</span>
-      </button>
-
-      <a href="flow-diagram.html" class="header-btn flow-btn" title="How AI Works (Hand-Drawn Flow Diagram)" style="text-decoration:none;">
-        <span>🎨</span>
-        <span>Flow</span>
-      </a>
-
-      <button class="header-btn calibrate-btn" id="openVoiceStudioBtn" title="Record in Voice Studio">
-        <span>🎙️</span>
-        <span>Studio</span>
-      </button>
-
-      <button class="header-btn" id="resetChatBtn" title="Reset Chat / New Session">
+      <!-- Quick Reset Button -->
+      <button class="header-btn reset-btn" id="resetChatBtn" title="Reset Chat / New Session">
         <span>🔄</span>
+        <span class="hide-on-mobile">New</span>
       </button>
     </div>
   </header>
+
+  <!-- Slide-Out Left Navigation Sidebar Drawer -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <aside class="left-sidebar-drawer" id="leftSidebarDrawer" aria-label="App Navigation Menu">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="brand-icon-wrapper" style="width:36px; height:36px;">
+          <span style="font-size: 1.3rem;">🤖</span>
+        </div>
+        <div>
+          <h3 style="font-size:1.05rem; font-weight:700; color:#fff;">Kids Learning AI</h3>
+          <p style="font-size:0.7rem; color:var(--text-muted);">Learning Control Panel</p>
+        </div>
+      </div>
+      <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Menu" title="Close Menu">&times;</button>
+    </div>
+
+    <div class="sidebar-content">
+      <!-- SECTION 1: 🧒 AI KID VOICES -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">
+          <span>🧒</span> AI Kid Voices (Natural Audio Models)
+        </div>
+        <div class="sidebar-voice-list" id="sidebarVoiceList">
+          <!-- Voice 1: Leo -->
+          <div class="sidebar-voice-card active" data-voice-id="kid-voice-1">
+            <div class="sidebar-voice-info">
+              <span class="sidebar-voice-avatar">👦</span>
+              <div>
+                <div class="sidebar-voice-name">Leo (Kid Voice 1) <span class="badge-age">Age 7-9</span></div>
+                <div class="sidebar-voice-desc">Energetic &amp; Cheerful (kids-voice-output.mp3)</div>
+              </div>
+            </div>
+            <div class="sidebar-voice-actions">
+              <button class="sidebar-play-btn" data-preview-voice="kid-voice-1" title="Play Voice Sample">
+                ▶ Sample
+              </button>
+              <button class="sidebar-select-voice-btn active" data-select-voice="kid-voice-1">
+                ✓ Active
+              </button>
+            </div>
+          </div>
+
+          <!-- Voice 2: Charlie -->
+          <div class="sidebar-voice-card" data-voice-id="kid-voice-2">
+            <div class="sidebar-voice-info">
+              <span class="sidebar-voice-avatar">🧒</span>
+              <div>
+                <div class="sidebar-voice-name">Charlie (Kid Voice 2) <span class="badge-age">Age 6-8</span></div>
+                <div class="sidebar-voice-desc">Playful &amp; High-Spirited (output.mp3)</div>
+              </div>
+            </div>
+            <div class="sidebar-voice-actions">
+              <button class="sidebar-play-btn" data-preview-voice="kid-voice-2" title="Play Voice Sample">
+                ▶ Sample
+              </button>
+              <button class="sidebar-select-voice-btn" data-select-voice="kid-voice-2">
+                Select
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Voice Tuning Sliders inside Sidebar -->
+        <div class="sidebar-sliders">
+          <div class="sidebar-slider-row">
+            <span class="slider-text">Speed: <strong id="sidebarRateDisplay">1.0x</strong></span>
+            <input type="range" id="sidebarRateSlider" min="0.7" max="1.4" step="0.05" value="1.0">
+          </div>
+          <div class="sidebar-slider-row">
+            <span class="slider-text">Pitch: <strong id="sidebarPitchDisplay">1.0x</strong></span>
+            <input type="range" id="sidebarPitchSlider" min="0.8" max="1.6" step="0.05" value="1.0">
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 2: 🌐 LANGUAGE SELECTOR -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">
+          <span>🌐</span> Choose Language (12 Languages)
+        </div>
+        <div class="sidebar-lang-pills" id="sidebarLangPills">
+          <!-- Populated from KIDS_LANGUAGES -->
+        </div>
+      </div>
+
+      <!-- SECTION 3: 🚀 DISCOVERY TOPICS -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">
+          <span>🚀</span> Quick Discovery Topics
+        </div>
+        <div class="sidebar-topic-grid">
+          <button class="sidebar-topic-chip" data-prompt="What is the distance between Earth and Moon?">
+            <span>🌕</span> Earth-Moon Distance
+          </button>
+          <button class="sidebar-topic-chip" data-prompt="Tell me a short story">
+            <span>⚡</span> 1-Min Short Story
+          </button>
+          <button class="sidebar-topic-chip" data-prompt="What is 45 plus 38?">
+            <span>🔢</span> Math Gym: 45 + 38
+          </button>
+          <button class="sidebar-topic-chip" data-prompt="If 4 friends share 24 candies, how many does each get?">
+            <span>🍬</span> Candy Sharing
+          </button>
+          <button class="sidebar-topic-chip" data-prompt="Tell me an animal riddle">
+            <span>🧩</span> Animal Riddle
+          </button>
+          <button class="sidebar-topic-chip" data-prompt="Why is the sky blue?">
+            <span>🌌</span> Why is Sky Blue?
+          </button>
+          <button class="sidebar-topic-chip" data-prompt="What does perseverance mean?">
+            <span>💡</span> Word Meaning
+          </button>
+          <button class="sidebar-topic-chip" data-prompt="Set a 1 minute timer">
+            <span>⏱️</span> 1-Minute Timer
+          </button>
+        </div>
+      </div>
+
+      <!-- SECTION 4: 🧠 AUTONOMOUS EVOLUTION & LEARNING HUB -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">
+          <span>🧠</span> AI Intelligence &amp; Studio
+        </div>
+        <div class="sidebar-tools-grid">
+          <button class="sidebar-tool-card" id="sidebarEvolutionBtn">
+            <span class="tool-icon">🧠</span>
+            <div class="tool-info">
+              <h4>Autonomous AI Evolution</h4>
+              <p>Continuous Question Capture &amp; Self-Rebuilding</p>
+            </div>
+            <span class="tool-arrow">➔</span>
+          </button>
+
+          <button class="sidebar-tool-card" id="sidebarStudioBtn">
+            <span class="tool-icon">🎙️</span>
+            <div class="tool-info">
+              <h4>Kids Voice Studio</h4>
+              <p>Record sentences to train custom voice</p>
+            </div>
+            <span class="tool-arrow">➔</span>
+          </button>
+
+          <a href="flow-diagram.html" class="sidebar-tool-card" style="text-decoration:none;">
+            <span class="tool-icon">🎨</span>
+            <div class="tool-info">
+              <h4>How It Works Flow</h4>
+              <p>Hand-drawn architecture diagram</p>
+            </div>
+            <span class="tool-arrow">➔</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- SECTION 5: ⭐ STAR REWARDS & RANK -->
+      <div class="sidebar-section" style="border-bottom:none;">
+        <div class="sidebar-rank-card">
+          <span style="font-size:2rem;">⭐</span>
+          <div>
+            <h4 style="color:#fde047; font-size:0.95rem; font-weight:700;">Star Explorer Rank</h4>
+            <p style="font-size:0.75rem; color:#cbd5e1;">Earn stars by asking math, science &amp; story questions!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
 
   <!-- Main Chat Container -->
   <main class="main-container">

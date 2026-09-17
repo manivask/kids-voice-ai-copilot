@@ -210,6 +210,149 @@ document.addEventListener('DOMContentLoaded', () => {
   if (closeLangModalBtn) closeLangModalBtn.addEventListener('click', closeLanguageModal);
   if (tabLangNavBtn) tabLangNavBtn.addEventListener('click', openLanguageModal);
 
+  // ==================== LEFT SIDEBAR DRAWER CONTROLS ====================
+  const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+  const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+  const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+  const leftSidebarDrawer = document.getElementById('leftSidebarDrawer');
+  const sidebarVoiceList = document.getElementById('sidebarVoiceList');
+  const sidebarLangPills = document.getElementById('sidebarLangPills');
+  const sidebarEvolutionBtn = document.getElementById('sidebarEvolutionBtn');
+  const sidebarStudioBtn = document.getElementById('sidebarStudioBtn');
+  const sidebarRateSlider = document.getElementById('sidebarRateSlider');
+  const sidebarPitchSlider = document.getElementById('sidebarPitchSlider');
+  const sidebarRateDisplay = document.getElementById('sidebarRateDisplay');
+  const sidebarPitchDisplay = document.getElementById('sidebarPitchDisplay');
+
+  function openSidebar() {
+    if (leftSidebarDrawer) leftSidebarDrawer.classList.add('open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
+  }
+
+  function closeSidebar() {
+    if (leftSidebarDrawer) leftSidebarDrawer.classList.remove('open');
+    if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+  }
+
+  if (sidebarToggleBtn) sidebarToggleBtn.addEventListener('click', openSidebar);
+  if (sidebarCloseBtn) sidebarCloseBtn.addEventListener('click', closeSidebar);
+  if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
+
+  if (sidebarEvolutionBtn) {
+    sidebarEvolutionBtn.addEventListener('click', () => {
+      closeSidebar();
+      openEvolutionModal();
+    });
+  }
+
+  if (sidebarStudioBtn) {
+    sidebarStudioBtn.addEventListener('click', () => {
+      closeSidebar();
+      openVoiceStudioModal();
+    });
+  }
+
+  // Sidebar Topic Chips
+  document.querySelectorAll('.sidebar-topic-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const prompt = chip.dataset.prompt;
+      if (prompt) {
+        closeSidebar();
+        handleSend(prompt);
+      }
+    });
+  });
+
+  // Render Sidebar Languages
+  function renderSidebarLanguages() {
+    if (!sidebarLangPills) return;
+    sidebarLangPills.innerHTML = '';
+    const currentCode = voice.currentLanguage;
+
+    Object.values(window.KIDS_LANGUAGES || {}).forEach(lang => {
+      const isSelected = lang.code === currentCode;
+      const btn = document.createElement('button');
+      btn.className = `sidebar-lang-pill ${isSelected ? 'active' : ''}`;
+      btn.innerHTML = `<span>${lang.flag}</span> <span>${lang.name}</span>`;
+      btn.addEventListener('click', () => {
+        switchLanguage(lang.code);
+        renderSidebarLanguages();
+      });
+      sidebarLangPills.appendChild(btn);
+    });
+  }
+
+  // Render Sidebar Voices (Voice 1 & Voice 2)
+  function renderSidebarVoices() {
+    if (!sidebarVoiceList) return;
+    sidebarVoiceList.innerHTML = '';
+    const currentId = voice.currentPersonaId;
+
+    voice.personas.forEach(p => {
+      const isActive = p.id === currentId;
+      const isPlaying = currentlyPreviewingId === p.id && voice.isSpeaking;
+      const card = document.createElement('div');
+      card.className = `sidebar-voice-card ${isActive ? 'active' : ''}`;
+      card.dataset.voiceId = p.id;
+      card.innerHTML = `
+        <div class="sidebar-voice-info">
+          <span class="sidebar-voice-avatar">${p.avatarText}</span>
+          <div>
+            <div class="sidebar-voice-name">${p.name} <span class="badge-age">${p.ageGroup || 'Kids'}</span></div>
+            <div class="sidebar-voice-desc">${p.tagline}</div>
+          </div>
+        </div>
+        <div class="sidebar-voice-actions">
+          <button class="sidebar-play-btn ${isPlaying ? 'playing' : ''}" data-preview-voice="${p.id}" title="Play Voice Sample">
+            ${isPlaying ? '⏹ Stop' : '▶ Sample'}
+          </button>
+          <button class="sidebar-select-voice-btn ${isActive ? 'active' : ''}" data-select-voice="${p.id}">
+            ${isActive ? '✓ Active' : 'Select'}
+          </button>
+        </div>
+      `;
+
+      const playBtn = card.querySelector('.sidebar-play-btn');
+      playBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePreviewPersonaVoice(p);
+      });
+
+      const selectBtn = card.querySelector('.sidebar-select-voice-btn');
+      selectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectPersona(p.id);
+      });
+
+      card.addEventListener('click', () => {
+        selectPersona(p.id);
+      });
+
+      sidebarVoiceList.appendChild(card);
+    });
+  }
+
+  // Sidebar Sliders
+  if (sidebarRateSlider) {
+    sidebarRateSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      voice.speechRate = val;
+      if (sidebarRateDisplay) sidebarRateDisplay.textContent = `${val.toFixed(2)}x`;
+      if (speechRateSlider) speechRateSlider.value = val;
+      if (rateValueDisplay) rateValueDisplay.textContent = `${val.toFixed(2)}x`;
+    });
+  }
+
+  if (sidebarPitchSlider) {
+    sidebarPitchSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      voice.speechPitch = val;
+      if (sidebarPitchDisplay) sidebarPitchDisplay.textContent = `${val.toFixed(2)}x`;
+      if (speechPitchSlider) speechPitchSlider.value = val;
+      if (pitchValueDisplay) pitchValueDisplay.textContent = `${val.toFixed(2)}x`;
+    });
+  }
+
   // ==================== VOICE PERSONA RENDERING ====================
   function renderVoicePersonaOptions() {
     if (kidsBoyVoicePersonaList) kidsBoyVoicePersonaList.innerHTML = '';
@@ -288,12 +431,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activePersona.ageGroup) {
       displayTag += ` (${activePersona.ageGroup})`;
     }
-    currentVoiceNameBadge.textContent = displayTag;
+    if (currentVoiceNameBadge) currentVoiceNameBadge.textContent = displayTag;
+    renderSidebarVoices();
   }
 
   function selectPersona(personaId) {
     voice.setPersona(personaId);
     renderVoicePersonaOptions();
+    renderSidebarVoices();
   }
 
   function togglePreviewPersonaVoice(persona) {
@@ -303,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setOrbState('idle');
       waveformContainer.classList.remove('active');
       renderVoicePersonaOptions();
+      renderSidebarVoices();
       return;
     }
 
@@ -311,29 +457,18 @@ document.addEventListener('DOMContentLoaded', () => {
     setOrbState('speaking');
     waveformContainer.classList.add('active');
     renderVoicePersonaOptions();
+    renderSidebarVoices();
 
-    if (persona.audioFile) {
-      voice.playSampleAudio(
-        () => {},
-        () => {
-          currentlyPreviewingId = null;
-          setOrbState('idle');
-          waveformContainer.classList.remove('active');
-          renderVoicePersonaOptions();
-        }
-      );
-    } else {
-      const sampleMsg = `Hi! I'm ${persona.name}! I love telling adventurous stories and exploring science together!`;
-      voice.speak(sampleMsg, 
-        () => {},
-        () => {
-          currentlyPreviewingId = null;
-          setOrbState('idle');
-          waveformContainer.classList.remove('active');
-          renderVoicePersonaOptions();
-        }
-      );
-    }
+    voice.playVoiceSample(persona.id,
+      () => {},
+      () => {
+        currentlyPreviewingId = null;
+        setOrbState('idle');
+        waveformContainer.classList.remove('active');
+        renderVoicePersonaOptions();
+        renderSidebarVoices();
+      }
+    );
   }
 
   function confirmDeleteClonedVoice(personaId) {
@@ -1083,6 +1218,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial renders
   renderVoicePersonaOptions();
+  renderSidebarVoices();
+  renderSidebarLanguages();
   renderLanguageOptions();
   renderEvolutionMetrics();
 });

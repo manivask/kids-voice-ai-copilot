@@ -18,28 +18,39 @@ class VoiceEngine {
     this.currentUtterance = null;
     this.liveMeterFrame = null;
 
-    // Natural AI Kid Boy Voice (Embedded Audio Model from kid-voice-output.mp3)
-    this.sampleAudioPath = 'audio/kids-voice-output.mp3';
-    this.sampleAudio = null;
+    // Dedicated AI Kid Voice Models
+    this.activeAudio = null;
 
     this.personas = [
       {
-        id: 'kid-boy-voice',
-        name: 'Leo (AI Kid Boy)',
-        ageGroup: 'Age 7-10',
+        id: 'kid-voice-1',
+        name: 'Leo (Kid Voice 1)',
+        ageGroup: 'Age 7-9',
         gender: 'kid-boy',
         category: 'kids-boy',
-        tagline: 'Natural AI Kid Boy Voice (High-Fidelity Audio Model)',
+        tagline: 'Energetic & Cheerful AI Kid Voice (kids-voice-output.mp3)',
         avatarText: '👦',
-        pitch: 1.45,
-        rate: 1.05,
+        pitch: 1.58,
+        rate: 1.08,
         audioFile: 'audio/kids-voice-output.mp3',
-        voiceIndexOffset: 0,
-        voicePattern: /zira|jenny|samantha|aria|google|eva|david/i
+        voiceIndexOffset: 0
+      },
+      {
+        id: 'kid-voice-2',
+        name: 'Charlie (Kid Voice 2)',
+        ageGroup: 'Age 6-8',
+        gender: 'kid-boy',
+        category: 'kids-boy',
+        tagline: 'Playful & High-Spirited AI Kid Voice (output.mp3)',
+        avatarText: '🧒',
+        pitch: 1.65,
+        rate: 1.05,
+        audioFile: 'audio/output.mp3',
+        voiceIndexOffset: 1
       }
     ];
 
-    this.currentPersonaId = 'kid-boy-voice';
+    this.currentPersonaId = 'kid-voice-1';
     this.initSpeechRecognition();
     this.loadVoices();
 
@@ -49,39 +60,48 @@ class VoiceEngine {
   }
 
   /**
-   * Plays the authentic natural AI kid voice MP3 file
+   * Plays the authentic natural AI kid voice MP3 file for the selected persona
    */
-  playSampleAudio(onStart, onEnd) {
+  playVoiceSample(personaId, onStart, onEnd) {
     this.stopSpeaking();
+    const targetPersona = this.getPersona(personaId) || this.getCurrentPersona();
+    const filePath = targetPersona.audioFile || 'audio/kids-voice-output.mp3';
+
     try {
-      if (!this.sampleAudio) {
-        this.sampleAudio = new Audio(this.sampleAudioPath);
-      }
-      this.sampleAudio.currentTime = 0;
+      this.activeAudio = new Audio(filePath);
+      this.activeAudio.currentTime = 0;
       this.isSpeaking = true;
       if (onStart) onStart();
 
-      this.sampleAudio.onended = () => {
+      this.activeAudio.onended = () => {
         this.isSpeaking = false;
+        this.activeAudio = null;
         if (onEnd) onEnd();
       };
 
-      this.sampleAudio.onerror = (e) => {
-        console.warn('Sample audio play error, falling back to speech synth:', e);
+      this.activeAudio.onerror = (e) => {
+        console.warn('Audio sample play error, falling back to speech synthesis:', e);
         this.isSpeaking = false;
+        this.activeAudio = null;
         if (onEnd) onEnd();
       };
 
-      this.sampleAudio.play().catch(err => {
-        console.warn('Audio play promise error:', err);
+      this.activeAudio.play().catch(err => {
+        console.warn('Audio playback promise error:', err);
         this.isSpeaking = false;
+        this.activeAudio = null;
         if (onEnd) onEnd();
       });
     } catch (e) {
       console.warn('Exception playing audio sample:', e);
       this.isSpeaking = false;
+      this.activeAudio = null;
       if (onEnd) onEnd();
     }
+  }
+
+  playSampleAudio(onStart, onEnd) {
+    this.playVoiceSample(this.currentPersonaId, onStart, onEnd);
   }
 
   loadVoices() {
@@ -181,34 +201,22 @@ class VoiceEngine {
       langVoices = this.voices;
     }
 
-    const isKid = persona.category === 'kids-boy' || persona.category === 'kids-girl';
-    const isAdultMale = persona.gender === 'male' && persona.category !== 'kids-boy';
+    // Explicitly reject deep/adult male voices so the kid persona never sounds like an adult man
+    const adultMaleKeywords = /david|mark|guy|george|male|daniel|richard|alex|oliver|rishi|raul|jorge|minho|ichiro|hemant|mohan|stefan|diego|brian|tom|paul/i;
+    const kidFriendlyKeywords = /zira|jenny|samantha|karen|aria|eva|fiona|veena|catherine|clara|tessa|moira|google|susan|hazel|hedda/i;
 
-    // High formant voice candidates that sound natural for kids
-    const kidNaturalKeywords = /zira|jenny|samantha|karen|aria|eva|fiona|veena|catherine|clara|tessa|moira|google/i;
-    const maleKeywords = /david|mark|guy|george|male|daniel|richard|alex|oliver|rishi|raul|jorge|minho|ichiro|hemant|mohan/i;
-
-    let matchedCandidates = [];
-
-    if (isKid) {
-      // For children (both boys & girls 5-12), prioritize high-formant, clear, energetic voices
-      matchedCandidates = langVoices.filter(v => kidNaturalKeywords.test(v.name));
-      if (matchedCandidates.length === 0) {
-        matchedCandidates = langVoices.filter(v => !maleKeywords.test(v.name));
-      }
-    } else if (isAdultMale) {
-      matchedCandidates = langVoices.filter(v => maleKeywords.test(v.name));
-    } else {
-      matchedCandidates = langVoices.filter(v => kidNaturalKeywords.test(v.name));
+    let filtered = langVoices.filter(v => !adultMaleKeywords.test(v.name));
+    if (filtered.length === 0) {
+      filtered = langVoices;
     }
 
-    if (matchedCandidates.length === 0) {
-      matchedCandidates = langVoices;
+    let prioritized = filtered.filter(v => kidFriendlyKeywords.test(v.name));
+    if (prioritized.length === 0) {
+      prioritized = filtered;
     }
 
     const offset = persona.voiceIndexOffset || 0;
-    const selectedVoice = matchedCandidates[offset % matchedCandidates.length] || matchedCandidates[0];
-
+    const selectedVoice = prioritized[offset % prioritized.length] || prioritized[0];
     return selectedVoice;
   }
 
@@ -222,7 +230,7 @@ class VoiceEngine {
       return;
     }
 
-    this.synth.cancel();
+    this.stopSpeaking();
     this.isSpeaking = false;
 
     const persona = this.getCurrentPersona();
@@ -236,12 +244,12 @@ class VoiceEngine {
       utterance.lang = this.currentLanguage;
     }
 
-    // Apply distinct calibrated pitch per persona
-    const basePitch = persona.pitch || 1.0;
-    const baseRate = persona.rate || 1.0;
+    // Apply calibrated high child pitch per persona
+    const basePitch = persona.pitch || 1.55;
+    const baseRate = persona.rate || 1.05;
 
-    utterance.pitch = Math.max(0.4, Math.min(2.0, basePitch * this.speechPitch));
-    utterance.rate = Math.max(0.5, Math.min(1.8, baseRate * this.speechRate));
+    utterance.pitch = Math.max(1.1, Math.min(2.0, basePitch * this.speechPitch));
+    utterance.rate = Math.max(0.7, Math.min(1.6, baseRate * this.speechRate));
     utterance.volume = 1.0;
 
     this.currentUtterance = utterance;
@@ -273,11 +281,12 @@ class VoiceEngine {
   }
 
   stopSpeaking() {
-    if (this.sampleAudio) {
+    if (this.activeAudio) {
       try {
-        this.sampleAudio.pause();
-        this.sampleAudio.currentTime = 0;
+        this.activeAudio.pause();
+        this.activeAudio.currentTime = 0;
       } catch (_) {}
+      this.activeAudio = null;
     }
     if (this.synth) {
       this.synth.cancel();
