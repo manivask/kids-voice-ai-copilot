@@ -81,6 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatInput = document.getElementById('chatInput');
   const sendBtn = document.getElementById('sendBtn');
   const micBtn = document.getElementById('micBtn');
+  const attachPhotoBtn = document.getElementById('attachPhotoBtn');
+  const photoFileInput = document.getElementById('photoFileInput');
+  const imagePreviewBar = document.getElementById('imagePreviewBar');
+  const previewThumbnailImg = document.getElementById('previewThumbnailImg');
+  const removePhotoBtn = document.getElementById('removePhotoBtn');
   const copilotOrbContainer = document.getElementById('copilotOrbContainer');
   const waveformContainer = document.getElementById('waveformContainer');
   const liveTranscript = document.getElementById('liveTranscript');
@@ -127,17 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const genderPillGroup = document.getElementById('genderPillGroup');
   const modePillGroup = document.getElementById('modePillGroup');
 
-  // Bottom Navigation Tabs
-  const tabCopilotBtn = document.getElementById('tabCopilotBtn');
-  const tabStoriesBtn = document.getElementById('tabStoriesBtn');
-  const tabMathBtn = document.getElementById('tabMathBtn');
-  const tabRiddlesBtn = document.getElementById('tabRiddlesBtn');
-  const tabVoicesBtn = document.getElementById('tabVoicesBtn');
-  const tabLangNavBtn = document.getElementById('tabLangNavBtn');
-
   let hasUserInteracted = false;
   let currentlyPreviewingId = null;
   let isPlayingSample = false;
+  let currentAttachedImage = null;
 
   // ==================== LANGUAGE CONTROLS ====================
   function renderLanguageOptions() {
@@ -575,32 +573,34 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Record Sentence Button Handler
-  recordSentenceBtn.addEventListener('click', async () => {
-    if (!voiceStudio.isRecording) {
-      const ok = await voiceStudio.startRecording((bandHeights, volume) => {
-        updateLiveEqualizer(bandHeights, volume);
-      });
-      if (ok) {
-        recordSentenceBtn.classList.add('recording');
-        studioStatusText.textContent = '🔴 Recording... Speak the sentence above into your mic';
-        if (studioActionButtonsRow) studioActionButtonsRow.style.display = 'none';
-      }
-    } else {
-      recordSentenceBtn.classList.remove('recording');
-      studioStatusText.textContent = '✅ Sound captured! Tap Play to check your voice sample';
-      await voiceStudio.stopRecording();
-      resetEqualizerBars();
+  if (recordSentenceBtn) {
+    recordSentenceBtn.addEventListener('click', async () => {
+      if (!voiceStudio.isRecording) {
+        const ok = await voiceStudio.startRecording((bandHeights, volume) => {
+          updateLiveEqualizer(bandHeights, volume);
+        });
+        if (ok) {
+          recordSentenceBtn.classList.add('recording');
+          studioStatusText.textContent = '🔴 Recording... Speak the sentence above into your mic';
+          if (studioActionButtonsRow) studioActionButtonsRow.style.display = 'none';
+        }
+      } else {
+        recordSentenceBtn.classList.remove('recording');
+        studioStatusText.textContent = '✅ Sound captured! Tap Play to check your voice sample';
+        await voiceStudio.stopRecording();
+        resetEqualizerBars();
 
-      if (vuIndicatorBadge) {
-        vuIndicatorBadge.className = 'vu-indicator-badge green';
-        vuIndicatorBadge.textContent = '✨ Voice Sample Captured Successfully';
-      }
+        if (vuIndicatorBadge) {
+          vuIndicatorBadge.className = 'vu-indicator-badge green';
+          vuIndicatorBadge.textContent = '✨ Voice Sample Captured Successfully';
+        }
 
-      if (studioActionButtonsRow) {
-        studioActionButtonsRow.style.display = 'flex';
+        if (studioActionButtonsRow) {
+          studioActionButtonsRow.style.display = 'flex';
+        }
       }
-    }
-  });
+    });
+  }
 
   if (playSampleRecordingBtn) {
     playSampleRecordingBtn.addEventListener('click', () => {
@@ -663,73 +663,72 @@ document.addEventListener('DOMContentLoaded', () => {
   if (openVoiceStudioBtn) openVoiceStudioBtn.addEventListener('click', openVoiceStudioModal);
   if (closeVoiceStudioBtn) closeVoiceStudioBtn.addEventListener('click', closeVoiceStudioModal);
 
-  openVoiceModalBtn.addEventListener('click', () => {
-    renderVoicePersonaOptions();
-    voiceModalOverlay.classList.add('open');
-  });
-
-  closeVoiceModalBtn.addEventListener('click', () => {
-    voice.stopSpeaking();
-    currentlyPreviewingId = null;
-    voiceModalOverlay.classList.remove('open');
-  });
-
-  speechRateSlider.addEventListener('input', (e) => {
-    voice.speechRate = parseFloat(e.target.value);
-    rateValueDisplay.textContent = `${voice.speechRate}x`;
-  });
-
-  speechPitchSlider.addEventListener('input', (e) => {
-    voice.speechPitch = parseFloat(e.target.value);
-    pitchValueDisplay.textContent = `${voice.speechPitch}x`;
-  });
-
-  // ==================== BOTTOM NAVIGATION ====================
-  function setNavActive(btn) {
-    [tabCopilotBtn, tabStoriesBtn, tabMathBtn, tabRiddlesBtn, tabVoicesBtn, tabLangNavBtn].forEach(b => {
-      if (b) b.classList.remove('active');
-    });
-    if (btn) btn.classList.add('active');
-  }
-
-  if (tabCopilotBtn) {
-    tabCopilotBtn.addEventListener('click', () => {
-      setNavActive(tabCopilotBtn);
-      chatInput.focus();
-    });
-  }
-
-  if (tabStoriesBtn) {
-    tabStoriesBtn.addEventListener('click', () => {
-      setNavActive(tabStoriesBtn);
-      handleSend("Tell me a kids story");
-    });
-  }
-
-  if (tabMathBtn) {
-    tabMathBtn.addEventListener('click', () => {
-      setNavActive(tabMathBtn);
-      handleSend("What is 45 plus 38?");
-    });
-  }
-
-  if (tabRiddlesBtn) {
-    tabRiddlesBtn.addEventListener('click', () => {
-      setNavActive(tabRiddlesBtn);
-      handleSend("Tell me an animal riddle");
-    });
-  }
-
-  if (tabVoicesBtn) {
-    tabVoicesBtn.addEventListener('click', () => {
-      setNavActive(tabVoicesBtn);
+  if (openVoiceModalBtn) {
+    openVoiceModalBtn.addEventListener('click', () => {
       renderVoicePersonaOptions();
-      voiceModalOverlay.classList.add('open');
+      if (voiceModalOverlay) voiceModalOverlay.classList.add('open');
+    });
+  }
+
+  if (closeVoiceModalBtn) {
+    closeVoiceModalBtn.addEventListener('click', () => {
+      voice.stopSpeaking();
+      currentlyPreviewingId = null;
+      if (voiceModalOverlay) voiceModalOverlay.classList.remove('open');
+    });
+  }
+
+  if (speechRateSlider) {
+    speechRateSlider.addEventListener('input', (e) => {
+      voice.speechRate = parseFloat(e.target.value);
+      if (rateValueDisplay) rateValueDisplay.textContent = `${voice.speechRate.toFixed(2)}x`;
+      if (sidebarRateSlider) sidebarRateSlider.value = voice.speechRate;
+      if (sidebarRateDisplay) sidebarRateDisplay.textContent = `${voice.speechRate.toFixed(2)}x`;
+    });
+  }
+
+  if (speechPitchSlider) {
+    speechPitchSlider.addEventListener('input', (e) => {
+      voice.speechPitch = parseFloat(e.target.value);
+      if (pitchValueDisplay) pitchValueDisplay.textContent = `${voice.speechPitch.toFixed(2)}x`;
+      if (sidebarPitchSlider) sidebarPitchSlider.value = voice.speechPitch;
+      if (sidebarPitchDisplay) sidebarPitchDisplay.textContent = `${voice.speechPitch.toFixed(2)}x`;
+    });
+  }
+
+  // ==================== PHOTO ATTACHMENT (+) ====================
+  if (attachPhotoBtn && photoFileInput) {
+    attachPhotoBtn.addEventListener('click', () => {
+      photoFileInput.click();
+    });
+
+    photoFileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (loadEvt) => {
+        currentAttachedImage = loadEvt.target.result;
+        if (previewThumbnailImg) previewThumbnailImg.src = currentAttachedImage;
+        if (imagePreviewBar) imagePreviewBar.style.display = 'flex';
+        chatInput.focus();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (removePhotoBtn) {
+    removePhotoBtn.addEventListener('click', () => {
+      currentAttachedImage = null;
+      if (photoFileInput) photoFileInput.value = '';
+      if (imagePreviewBar) imagePreviewBar.style.display = 'none';
+      if (previewThumbnailImg) previewThumbnailImg.src = '';
     });
   }
 
   // Orb Visual States
   function setOrbState(state) {
+    if (!copilotOrbContainer || !micBtn) return;
     copilotOrbContainer.classList.remove('listening', 'speaking');
     if (state === 'listening') {
       copilotOrbContainer.classList.add('listening');
@@ -745,7 +744,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Send Message and Handle Agent Execution
   async function handleSend(text) {
     const query = (text || chatInput.value || '').trim();
-    if (!query) return;
+    const attachedImg = currentAttachedImage;
+
+    if (!query && !attachedImg) return;
 
     if (!hasUserInteracted) {
       hasUserInteracted = true;
@@ -755,18 +756,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     appendMessage({
       sender: 'user',
-      text: query
+      text: query || (attachedImg ? '📷 [Attached Photo for Analysis]' : ''),
+      image: attachedImg
     });
 
+    // Clear inputs and attached photo
     chatInput.value = '';
+    currentAttachedImage = null;
+    if (photoFileInput) photoFileInput.value = '';
+    if (imagePreviewBar) imagePreviewBar.style.display = 'none';
+    if (previewThumbnailImg) previewThumbnailImg.src = '';
+
     sendBtn.disabled = true;
 
     // Process Query with Agent Engine
-    const response = await agent.processQuery(query);
+    const response = await agent.processQuery(query, { image: attachedImg });
 
     // Autonomous Question Capture & Self-Evolution Cycle
     if (typeof autonomousLearner !== 'undefined' && autonomousLearner) {
-      autonomousLearner.captureQuestion(query, response);
+      autonomousLearner.captureQuestion(query || 'Visual Image Analysis', response);
     }
 
     if (response.languageChanged) {
@@ -776,6 +784,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentLangName) currentLangName.textContent = cfg.name;
         updatePromptsForLanguage(cfg);
         renderLanguageOptions();
+        renderSidebarLanguages();
       }
     }
 
@@ -792,7 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Gamification Reward: Award star for learning questions
-    if (response.widgetHtml || response.text.length > 50) {
+    if (response.widgetHtml || response.text.length > 50 || attachedImg) {
       awardStars(1);
     }
 
@@ -816,7 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Append Message to UI
-  function appendMessage({ sender, text, spokenText, widgetHtml, query = '' }) {
+  function appendMessage({ sender, text, spokenText, widgetHtml, query = '', image = null }) {
     const msgEl = document.createElement('div');
     msgEl.className = `chat-message ${sender}`;
 
@@ -824,9 +833,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeStr = `${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
 
     if (sender === 'user') {
+      const imgHtml = image ? `
+        <div style="margin-bottom:0.5rem; border-radius:12px; overflow:hidden; max-width:240px; border:2px solid rgba(255,255,255,0.2);">
+          <img src="${image}" alt="Attached photo" style="width:100%; height:auto; display:block; border-radius:10px;">
+        </div>
+      ` : '';
+
       msgEl.innerHTML = `
         <div class="avatar user-avatar">You</div>
         <div class="message-bubble">
+          ${imgHtml}
           <div>${escapeHtml(text)}</div>
           <div class="message-bubble-time">${timeStr}</div>
         </div>

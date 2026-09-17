@@ -23,12 +23,25 @@ class AgentEngine {
   /**
    * Process a natural language query and return rich response payload
    * @param {string} rawInput 
+   * @param {Object} [options]
    * @returns {Promise<{text: string, spokenText: string, widgetHtml?: string, triggerAction?: string, languageChanged?: string}>}
    */
-  async processQuery(rawInput) {
+  async processQuery(rawInput, options = {}) {
     const input = (rawInput || '').trim();
     const clean = input.toLowerCase();
-    const currentLangCode = this.voice ? this.voice.currentLanguageCode : 'en-US';
+    const currentLangCode = this.voice ? this.voice.currentLanguage : 'en-US';
+
+    // 0. Multimodal Photo Question Check
+    if (options && options.image) {
+      if (this.aiReasoning) {
+        const visionResult = await this.aiReasoning.analyzeVisualImage(options.image, input, currentLangCode);
+        return {
+          text: `📷 **${visionResult.title}**\n\n${visionResult.answer}\n\n✨ **Did You Know?**: ${visionResult.funFact || ''}`,
+          spokenText: visionResult.spokenAnswer,
+          widgetHtml: this.aiReasoning.renderReasoningCard(visionResult)
+        };
+      }
+    }
 
     if (!input) {
       const langConfig = this.voice.getLanguageConfig();
