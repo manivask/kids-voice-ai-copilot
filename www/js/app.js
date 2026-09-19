@@ -206,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (openLangModalBtn) openLangModalBtn.addEventListener('click', openLanguageModal);
   if (closeLangModalBtn) closeLangModalBtn.addEventListener('click', closeLanguageModal);
-  if (tabLangNavBtn) tabLangNavBtn.addEventListener('click', openLanguageModal);
 
   // ==================== LEFT SIDEBAR DRAWER CONTROLS ====================
   const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
@@ -311,16 +310,20 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       const playBtn = card.querySelector('.sidebar-play-btn');
-      playBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePreviewPersonaVoice(p);
-      });
+      if (playBtn) {
+        playBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          togglePreviewPersonaVoice(p);
+        });
+      }
 
       const selectBtn = card.querySelector('.sidebar-select-voice-btn');
-      selectBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        selectPersona(p.id);
-      });
+      if (selectBtn) {
+        selectBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectPersona(p.id);
+        });
+      }
 
       card.addEventListener('click', () => {
         selectPersona(p.id);
@@ -402,10 +405,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const previewBtn = card.querySelector('.preview-voice-btn');
-      previewBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        togglePreviewPersonaVoice(p);
-      });
+      if (previewBtn) {
+        previewBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          togglePreviewPersonaVoice(p);
+        });
+      }
 
       if (p.isUserCloned) {
         const delBtn = card.querySelector('.delete-voice-btn');
@@ -1009,27 +1014,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Event Listeners
-  sendBtn.addEventListener('click', () => {
-    if (voice.isListening) {
-      voice.stopListening();
-      resetListeningUi();
-    }
-    handleSend();
-  });
-
-  micBtn.addEventListener('click', toggleListening);
-  copilotOrbContainer.addEventListener('click', toggleListening);
-
-  chatInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
+  if (sendBtn) {
+    sendBtn.addEventListener('click', () => {
       if (voice.isListening) {
         voice.stopListening();
         resetListeningUi();
       }
       handleSend();
-    }
-  });
+    });
+  }
+
+  if (micBtn) micBtn.addEventListener('click', toggleListening);
+  if (copilotOrbContainer) copilotOrbContainer.addEventListener('click', toggleListening);
+
+  if (chatInput) {
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (voice.isListening) {
+          voice.stopListening();
+          resetListeningUi();
+        }
+        handleSend();
+      }
+    });
+  }
 
   // Reset Chat button
   const resetChatBtn = document.getElementById('resetChatBtn');
