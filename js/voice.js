@@ -202,8 +202,8 @@ class VoiceEngine {
     }
 
     // Explicitly reject deep/adult male voices so the kid persona never sounds like an adult man
-    const adultMaleKeywords = /david|mark|guy|george|male|daniel|richard|alex|oliver|rishi|raul|jorge|minho|ichiro|hemant|mohan|stefan|diego|brian|tom|paul/i;
-    const kidFriendlyKeywords = /zira|jenny|samantha|karen|aria|eva|fiona|veena|catherine|clara|tessa|moira|google|susan|hazel|hedda/i;
+    const adultMaleKeywords = /david|mark|guy|george|male|daniel|richard|alex|oliver|rishi|raul|jorge|minho|ichiro|hemant|mohan|stefan|diego|brian|tom|paul|grandpa|robot|rocko|zarvox/i;
+    const kidFriendlyKeywords = /jenny|aria|ana|samantha|karen|veena|catherine|clara|tessa|moira|google|susan|hazel|hedda|junior|child|kid|natural/i;
 
     let filtered = langVoices.filter(v => !adultMaleKeywords.test(v.name));
     if (filtered.length === 0) {
@@ -215,13 +215,26 @@ class VoiceEngine {
       prioritized = filtered;
     }
 
-    const offset = persona.voiceIndexOffset || 0;
+    const offset = (persona && persona.voiceIndexOffset) || 0;
     const selectedVoice = prioritized[offset % prioritized.length] || prioritized[0];
     return selectedVoice;
   }
 
   /**
-   * Speak with distinct vocal characteristics (pitch, rate, volume)
+   * Clean markdown and technical symbols from text for smooth natural vocalization
+   */
+  cleanTextForSpeech(text) {
+    if (!text) return '';
+    return text
+      .replace(/[*_#`~>]/g, '')                     // strip markdown symbols
+      .replace(/https?:\/\/\S+/g, '')               // strip urls
+      .replace(/\s+/g, ' ')                         // collapse spaces
+      .trim();
+  }
+
+  /**
+   * Speak with distinct vocal characteristics and robust sentence chunking
+   * Prevents browser speech synthesis 15-second cutoffs on mobile & desktop
    */
   speak(text, onStart, onEnd) {
     if (!this.synth) {
@@ -234,50 +247,72 @@ class VoiceEngine {
     this.isSpeaking = false;
 
     const persona = this.getCurrentPersona();
-    const utterance = new SpeechSynthesisUtterance(text);
-    const matchedVoice = this.resolveBrowserVoice(persona);
-
-    if (matchedVoice) {
-      utterance.voice = matchedVoice;
-      utterance.lang = matchedVoice.lang || this.currentLanguage;
-    } else {
-      utterance.lang = this.currentLanguage;
+    const clean = this.cleanTextForSpeech(text);
+    if (!clean) {
+      if (onEnd) onEnd();
+      return;
     }
 
-    // Apply calibrated high child pitch per persona
+    // Split text into coherent sentence chunks (by . ! ? or linebreaks) to ensure continuous speech
+    const rawChunks = clean.match(/[^.!?\n]+[.!?\n]+/g) || [clean];
+    const chunks = rawChunks
+      .map(c => c.trim())
+      .filter(c => c.length > 0);
+
+    if (chunks.length === 0) {
+      if (onEnd) onEnd();
+      return;
+    }
+
+    const matchedVoice = this.resolveBrowserVoice(persona);
     const basePitch = persona.pitch || 1.55;
     const baseRate = persona.rate || 1.05;
+    const targetPitch = Math.max(1.1, Math.min(2.0, basePitch * this.speechPitch));
+    const targetRate = Math.max(0.7, Math.min(1.6, baseRate * this.speechRate));
+    const targetLang = (matchedVoice && matchedVoice.lang) || this.currentLanguage;
 
-    utterance.pitch = Math.max(1.1, Math.min(2.0, basePitch * this.speechPitch));
-    utterance.rate = Math.max(0.7, Math.min(1.6, baseRate * this.speechRate));
-    utterance.volume = 1.0;
+    this.isSpeaking = true;
+    if (onStart) onStart();
 
-    this.currentUtterance = utterance;
+    let chunkIndex = 0;
+    const speakNextChunk = () => {
+      if (!this.isSpeaking || chunkIndex >= chunks.length) {
+        this.isSpeaking = false;
+        this.currentUtterance = null;
+        if (onEnd) onEnd();
+        return;
+      }
 
-    utterance.onstart = () => {
-      this.isSpeaking = true;
-      if (onStart) onStart();
+      const chunkText = chunks[chunkIndex++];
+      const utterance = new SpeechSynthesisUtterance(chunkText);
+      if (matchedVoice) {
+        utterance.voice = matchedVoice;
+      }
+      utterance.lang = targetLang;
+      utterance.pitch = targetPitch;
+      utterance.rate = targetRate;
+      utterance.volume = 1.0;
+
+      this.currentUtterance = utterance;
+
+      utterance.onend = () => {
+        speakNextChunk();
+      };
+
+      utterance.onerror = (e) => {
+        console.warn('Utterance speech chunk error:', e);
+        speakNextChunk();
+      };
+
+      try {
+        this.synth.speak(utterance);
+      } catch (err) {
+        console.warn('Synth speak chunk error:', err);
+        speakNextChunk();
+      }
     };
 
-    utterance.onend = () => {
-      this.isSpeaking = false;
-      this.currentUtterance = null;
-      if (onEnd) onEnd();
-    };
-
-    utterance.onerror = (e) => {
-      this.isSpeaking = false;
-      this.currentUtterance = null;
-      if (onEnd) onEnd();
-    };
-
-    try {
-      this.synth.speak(utterance);
-    } catch (err) {
-      console.warn('Synth speak error:', err);
-      this.isSpeaking = false;
-      if (onEnd) onEnd();
-    }
+    speakNextChunk();
   }
 
   stopSpeaking() {

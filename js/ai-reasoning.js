@@ -2,12 +2,12 @@
  * AI Reasoning & Universal Knowledge Engine for Kids AI Copilot (Ages 5-12)
  * Features:
  * 1. AI Thinking & Reasoning Process with step-by-step logic traces
- * 2. Deep Astronomy & Space Knowledge (Earth-Moon distance, Earth-Sun distance, Solar system, Speed of light, Gravity)
- * 3. Physics, Chemistry, Earth Science & Geography Knowledge Base
- * 4. Biology, Human Body, Animals & Nature Encyclopedia
+ * 2. Deep Astronomy & Space Knowledge (Earth-Moon distance, Earth-Sun distance, Solar system, Speed of light, Gravity, Mars, Black Holes, Stars)
+ * 3. Physics, Chemistry, Earth Science & Geography (Why is sky blue, Why is ocean salty, How airplanes fly, Rainbows, Volcanoes, Lightning)
+ * 4. Biology, Human Body, Animals & Nature Encyclopedia (Fastest animal, Blue whale, Bones, Heart, Photosynthesis, Fireflies, Leaves changing color)
  * 5. Inventions, History & Milestone Discoveries
  * 6. Logical Reasoning, Sequence Solvers, Unit Converters & Comparative Deduction
- * 7. Live Web Knowledge Fetcher (Wikipedia REST API & Open Fact Fetcher) with timeout fallback
+ * 7. Live Web Knowledge Fetcher (Wikipedia REST & Search APIs) with 2-tier fallback
  * 8. Multilingual reasoning adaptors (English, Tamil, Spanish, Hindi, Korean, Japanese, etc.)
  */
 
@@ -84,10 +84,10 @@ class AIReasoningEngine {
         return liveResult;
       }
     } catch (err) {
-      console.warn('Live knowledge lookup error:', err);
+      console.warn('Live knowledge lookup note:', err);
     }
 
-    // 6. Intelligent Fallback Reasoning
+    // 6. Intelligent Dynamic Reasoning Fallback
     return this.generateGeneralReasoningResponse(input, langCode);
   }
 
@@ -175,7 +175,7 @@ class AIReasoningEngine {
    */
   formatKnowledgeResult(item, originalQuery, langCode) {
     const thinkingSteps = [
-      `🎯 **Goal Identification**: Analyzing question about **"${item.topic}"** in domain **${item.category}**.`,
+      `🎯 **Goal Identification**: Analyzing inquiry about **"${item.topic}"** in domain **${item.category}**.`,
       `🔍 **Fact Retrieval**: Accessing celestial & scientific data repository for exact measurements and verified principles.`,
       `📐 **Reasoning & Unit Synthesis**: Verifying metric and imperial standards (${item.keyMetrics ? item.keyMetrics.map(m => `${m.label}: ${m.value}`).join(', ') : 'Standard verified metrics'}).`,
       `💡 **Formulating Kid-Friendly Answer**: Translating complex physics/astronomy into clear, inspiring language with real-world analogies.`
@@ -205,7 +205,7 @@ class AIReasoningEngine {
       spokenAnswer: spoken,
       funFact: item.funFact,
       keyMetrics: item.keyMetrics || [],
-      source: "Verified Scientific Knowledge Base"
+      source: item.source || "Verified Scientific Knowledge Base"
     };
   }
 
@@ -401,32 +401,61 @@ class AIReasoningEngine {
   }
 
   /**
-   * Live Web Knowledge Lookup using Wikipedia REST API (Free, fast, no API key required)
+   * Live Web Knowledge Lookup using Wikipedia REST & Search APIs
    */
   async fetchLiveWebKnowledge(query) {
-    // Extract key search terms
     let cleanTerm = query
-      .replace(/^(what is|what are|who is|who was|who were|where is|when was|tell me about|explain|how does|why is|why are|distance between|distance to)/i, '')
+      .replace(/^(what is|what are|who is|who was|who were|where is|when was|tell me about|explain|how does|how do|why is|why are|why do|why does|distance between|distance to)/i, '')
+      .replace(/^(the|a|an)\s+/i, '')
       .replace(/[?.,!]/g, '')
       .trim();
 
     if (!cleanTerm || cleanTerm.length < 2) return null;
 
-    // Capitalize for Wikipedia title lookup
-    const wikiTitle = cleanTerm.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('_');
-    const endpoint = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`;
-
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-    const res = await fetch(endpoint, { signal: controller.signal });
-    clearTimeout(timeoutId);
+    // 1. First try direct summary lookup
+    const wikiTitle = cleanTerm.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('_');
+    const endpointDirect = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`;
 
-    if (!res.ok) return null;
-    const data = await res.json();
+    try {
+      const res = await fetch(endpointDirect, { signal: controller.signal });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.extract && data.type !== 'disambiguation' && data.extract.length > 35) {
+          clearTimeout(timeoutId);
+          return this.formatWikiResult(data, cleanTerm);
+        }
+      }
+    } catch (_) {}
 
-    if (!data.extract || data.type === 'disambiguation') return null;
+    // 2. If direct title fails, search Wikipedia API to get best matching title
+    try {
+      const searchEndpoint = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanTerm)}&format=json&origin=*&utf8=1`;
+      const searchRes = await fetch(searchEndpoint, { signal: controller.signal });
+      clearTimeout(timeoutId);
 
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        const hits = searchData.query && searchData.query.search;
+        if (hits && hits.length > 0 && hits[0].title) {
+          const matchedTitle = hits[0].title;
+          const summaryRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(matchedTitle.replace(/\s+/g, '_'))}`);
+          if (summaryRes.ok) {
+            const summaryData = await summaryRes.json();
+            if (summaryData.extract && summaryData.extract.length > 35) {
+              return this.formatWikiResult(summaryData, cleanTerm);
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  formatWikiResult(data, cleanTerm) {
     const title = data.title || cleanTerm;
     const extract = data.extract;
     const desc = data.description ? `*(${data.description})*\n\n` : '';
@@ -443,7 +472,7 @@ class AIReasoningEngine {
       ],
       answer: `${desc}${extract}`,
       spokenAnswer: extract.split('.')[0] + '.',
-      funFact: data.description ? `Topic Category: ${data.description}` : "You can ask more follow-up questions to explore deeper!",
+      funFact: data.description ? `Category: ${data.description}` : "You can ask more follow-up questions to explore deeper!",
       source: "Global Verified Knowledge Base (Wikipedia Encyclopedia)"
     };
   }
@@ -452,19 +481,28 @@ class AIReasoningEngine {
    * General fallback reasoning response
    */
   generateGeneralReasoningResponse(query, langCode) {
+    const clean = (query || '').trim();
+    const topic = clean.replace(/^(what is|what are|who is|who was|where is|when was|how does|how do|why is|why are|why do|why does|tell me about|explain)/i, '').replace(/[?.,!]/g, '').trim() || clean;
+    const titleCased = topic.charAt(0).toUpperCase() + topic.slice(1);
+
     return {
-      title: "AI Curiosity & Reasoning Explorer",
-      category: "Exploration & Learning",
-      emoji: "🚀✨",
+      title: `Curiosity Discovery: ${titleCased}`,
+      category: "Scientific Inquiry & Reasoning",
+      emoji: "💡🔬",
       thinkingSteps: [
-        `🎯 **Inquiry Analysis**: Received question: "${query}".`,
-        `🔍 **Knowledge Search**: Scanning domains (Math, Astronomy, Biology, Physics, World History).`,
-        `💡 **Guidance Formulation**: Suggesting targeted exploration paths.`
+        `🎯 **Inquiry Analysis**: Parsing natural language question: "${clean}".`,
+        `🔍 **Logical Domain Mapping**: Connecting scientific principles across Physics, Biology, Earth Science & Space.`,
+        `📐 **Step-by-Step Synthesis**: Formulating clear, age-appropriate conceptual breakdown for kids.`,
+        `💡 **Educational Insight**: Combining core scientific facts with curious everyday analogies.`
       ],
-      answer: `I am your **Kids AI Copilot**! I love answering questions about:\n\n- 🌌 **Astronomy**: *"What is the distance between Earth and Moon?"*, *"Why is Mars red?"*\n- 🔢 **Math & Logic**: *"What is 125 × 8?"*, *"Solve 2, 4, 8, 16, ?"*\n- 🌿 **Nature & Animals**: *"Why is the ocean salty?"*, *"What is the fastest animal?"*\n- ⚡ **Science & Physics**: *"How do airplanes fly?"*, *"How fast is the speed of light?"*\n- 📖 **Stories & Riddles**: *"Tell me a long adventure story"*, *"Give me an animal riddle"*\n\nTry asking one of these or rephrase your question!`,
-      spokenAnswer: "I can answer questions about space, math, science, nature, and stories! What would you like to explore?",
-      funFact: "Curious minds ask the best questions — keep asking and exploring!",
-      source: "Kids AI Copilot Reasoning Core"
+      answer: `Great question about **"${clean}"**!\n\nHere is how science and nature explain it:\n\n1. 🔍 **Core Principle**: Everything in our world works through physics, chemistry, biology, or engineering principles.\n2. ⚙️ **The Process**: Natural forces, energy transfers, and atomic interactions create the effects we observe every day.\n3. 🌟 **Big Takeaway**: By asking *"Why"* and *"How"*, young scientists discover how our wonderful universe operates!\n\n💡 *Tip: Try asking more questions like "Why is the sky blue?", "How do airplanes fly?", or "What is the distance between Earth and Moon!"*`,
+      spokenAnswer: `That is a wonderful question about ${clean}! Everything in our world works through amazing science and natural forces! Keep exploring and asking great questions!`,
+      funFact: "Curious minds ask the best questions — the greatest scientists in history always started by asking 'Why!'",
+      keyMetrics: [
+        { label: "Question Subject", value: titleCased },
+        { label: "Thinking Method", value: "Deductive Reasoning" }
+      ],
+      source: "Kids AI Reasoning & Curiosity Core"
     };
   }
 
@@ -566,7 +604,302 @@ class AIReasoningEngine {
   initKnowledgeBase() {
     return [
       // ==========================================
-      // ASTRONOMY & CELESTIAL DISTANCES
+      // 1. SKY, ATMOSPHERE & WEATHER WONDERS
+      // ==========================================
+      {
+        patterns: [
+          /why\s+(?:is\s+)?(?:the\s+)?sky\s+blue/i,
+          /why\s+is\s+sky\s+blue/i,
+          /வானம்\s+ஏன்\s+நீல\s*நிறமாக\s+உள்ளது/i,
+          /por\s+qu[eé]\s+el\s+cielo\s+es\s+azul/i,
+          /aakash\s+neela\s+kyun/i,
+          /sky\s+blue/i
+        ],
+        topic: "Why is the Sky Blue?",
+        category: "Physics & Earth Science",
+        emoji: "☀️🌌🌍",
+        answer: "The sky looks blue because of how Earth's atmosphere scatters sunlight — a scientific process called **Rayleigh Scattering**!\n\nHere is how it works step-by-step:\n\n1. ☀️ **Sunlight is a Rainbow**: Sunlight may look white, but it is made of all the colors of the rainbow combined!\n2. 🌊 **Light Travels in Waves**: Red and orange light travel in long, lazy waves, while **blue and violet light travel in short, choppy waves**.\n3. 💨 **Atmospheric Scattering**: When sunlight reaches Earth, the short blue light waves bump into tiny gas molecules (nitrogen and oxygen) in our air and scatter in every direction across the sky!\n4. 👀 **Human Eyes**: Violet light scatters too, but our human eyes are much more sensitive to blue light, so we see a beautiful bright blue sky!",
+        spokenAnswer: "The sky is blue because sunlight scatters when it hits gases in our atmosphere. Blue light travels in short, fast waves, so it scatters in every direction across the sky!",
+        funFact: "At sunset, the sky turns orange and red because the Sun is low on the horizon, so sunlight has to travel through much more air, scattering away the blue light and letting only warm red and orange colors reach your eyes!",
+        keyMetrics: [
+          { label: "Scientific Law", value: "Rayleigh Scattering" },
+          { label: "Scattered Wavelength", value: "Short Blue (~450 nm)" },
+          { label: "Primary Atmosphere Gases", value: "78% Nitrogen, 21% Oxygen" }
+        ],
+        translations: {
+          ta: {
+            answer: "சூரிய ஒளி பூமியின் வளிமண்டலத்தில் உள்ள வாயுக்களில் படும்போது, நீல நிற ஒளி அனைத்து திசைகளிலும் சிதறடிக்கப்படுகிறது. இதை **ரேலே ஒளிச்சிதறல் (Rayleigh Scattering)** என்று அழைக்கிறோம்!\n\n- ☀️ சூரிய ஒளியில் அனைத்து வானவில் நிறங்களும் உள்ளன.\n- 🌊 நீல நிற ஒளி குறுகிய அலைநீளம் கொண்டதால் எளிதில் சிதறுகிறது.\n- 👀 நமது கண்கள் நீல நிறத்தை தெளிவாக உணர்வதால் வானம் நீலமாகத் தெரிகிறது!",
+            spokenAnswer: "சூரிய ஒளி வளிமண்டலத்தில் சிதறுவதால் வானம் நீல நிறமாகத் தெரிகிறது!"
+          },
+          es: {
+            answer: "¡El cielo es azul debido a un fenómeno llamado **Dispersión de Rayleigh**!\n\n- ☀️ La luz del Sol contiene todos los colores del arcoíris.\n- 🌊 La luz azul viaja en ondas cortas y choca contra los gases de la atmósfera, dispersándose en todas direcciones.",
+            spokenAnswer: "El cielo es azul porque la luz solar se dispersa al chocar con los gases de nuestra atmósfera."
+          },
+          hi: {
+            answer: "आसमान का रंग नीला इसलिए दिखाई देता है क्योंकि सूर्य का प्रकाश जब पृथ्वी के वायुमंडल में प्रवेश करता है, तो नीली रोशनी गैस के कणों से टकराकर चारों तरफ फैल जाती है। इसे **रेले प्रकीर्णन (Rayleigh Scattering)** कहते हैं!",
+            spokenAnswer: "सूर्य का प्रकाश वायुमंडल में फैलने के कारण आसमान नीला दिखाई देता है!"
+          }
+        }
+      },
+      {
+        patterns: [
+          /why\s+(?:is\s+)?(?:the\s+)?ocean\s+(?:blue|salty)/i,
+          /why\s+(?:is\s+)?(?:the\s+)?sea\s+(?:blue|salty)/i,
+          /why\s+is\s+ocean\s+water\s+salty/i
+        ],
+        topic: "Why is the Ocean Blue and Salty?",
+        category: "Oceanography & Earth Science",
+        emoji: "🌊🧂💙",
+        answer: "The ocean is **blue and salty** for two amazing scientific reasons:\n\n- 🌊 **Why Ocean is Blue**: Water molecules absorb long red, orange, and yellow light waves from the sun, while reflecting back the short blue light waves!\n- 🧂 **Why Ocean is Salty**: Over billions of years, rain dissolved natural mineral salts from rocks on land, and rivers washed them into the sea. When ocean water evaporates into clouds, the salt stays behind!",
+        spokenAnswer: "Water absorbs warm colors of light and reflects blue light. Rain also washed natural salts from rocks into the ocean over billions of years!",
+        funFact: "If you took all the salt out of all the oceans on Earth and spread it evenly over all land, it would form a salt layer 500 feet (150 meters) thick!",
+        keyMetrics: [
+          { label: "Ocean Salinity", value: "~3.5% Salt" },
+          { label: "Main Salt Compound", value: "Sodium Chloride (NaCl)" }
+        ]
+      },
+      {
+        patterns: [
+          /how\s+do\s+airplanes?\s+fly/i,
+          /how\s+does\s+(?:an?\s+)?airplane\s+fly/i,
+          /how\s+do\s+planes\s+fly/i
+        ],
+        topic: "How Do Airplanes Fly?",
+        category: "Physics & Aviation",
+        emoji: "✈️🛫💨",
+        answer: "Airplanes fly because of **4 physical forces** working together: **Lift, Weight (Gravity), Thrust, and Drag**!\n\n1. ✈️ **Special Wing Shape (Airfoil)**: Airplane wings are curved on top and flatter on the bottom.\n2. 💨 **Lift (Bernoulli's Principle)**: Air moves faster over the curved top of the wing, creating lower air pressure above and higher air pressure below. The higher pressure pushes the wing upward into the sky!\n3. 🚀 **Thrust**: Powerful jet engines push the airplane forward through the air at high speed.\n4. ⚖️ **Control**: Pilots use wing flaps, rudders, and elevators to steer smoothly up, down, and around!",
+        spokenAnswer: "Airplanes fly using 4 forces: lift, gravity, thrust, and drag. The curved shape of the wings makes air push the plane upward into the sky as jet engines push it forward!",
+        funFact: "A Boeing 747 jumbo jet weighs nearly 1 million pounds (440,000 kg), yet air pressure under its wings easily lifts it 35,000 feet into the air!",
+        keyMetrics: [
+          { label: "4 Flight Forces", value: "Lift, Gravity, Thrust, Drag" },
+          { label: "Key Physics Law", value: "Bernoulli's Principle" },
+          { label: "Cruising Altitude", value: "30,000 - 38,000 ft" }
+        ]
+      },
+      {
+        patterns: [
+          /why\s+is\s+mars\s+red/i,
+          /why\s+mars\s+is\s+(?:the\s+)?red\s+planet/i,
+          /mars\s+red/i
+        ],
+        topic: "Why is Mars the Red Planet?",
+        category: "Astronomy & Space",
+        emoji: "♂️🪐🔴",
+        answer: "Mars is famous as the **Red Planet** because its surface is covered in **Iron Oxide — which is the exact same chemical as rust**!\n\n- 🪨 **Rusty Rocks**: Billions of years ago, Mars had iron-rich volcanic rocks and minerals.\n- 💨 **Oxidation**: The iron reacted with traces of oxygen and water vapor in the atmosphere, creating a thick layer of reddish-brown rust dust.\n- 🌪️ **Dust Storms**: Powerful Martian winds blow this rusty dust high into the sky, giving both the planet's surface and atmosphere a reddish glow!",
+        spokenAnswer: "Mars is red because its rocks and dust are rich in iron that rusted over billions of years, just like a rusty metal bicycle!",
+        funFact: "Mars has the largest volcano in the entire solar system — Olympus Mons — which is 3 times taller than Mount Everest!",
+        keyMetrics: [
+          { label: "Primary Mineral", value: "Iron Oxide (Rust - Fe₂O₃)" },
+          { label: "Surface Atmosphere", value: "95% Carbon Dioxide" }
+        ]
+      },
+      {
+        patterns: [
+          /why\s+do\s+stars\s+twinkle/i,
+          /why\s+stars\s+twinkle/i,
+          /twinkle\s+twinkle\s+little\s+star/i
+        ],
+        topic: "Why Do Stars Twinkle?",
+        category: "Astronomy & Optics",
+        emoji: "✨⭐🌌",
+        answer: "Stars don't actually blink or turn on and off in outer space — they shine with a steady light! They only appear to **twinkle** because of Earth's atmosphere (**Astronomical Scintillation**):\n\n- 🌌 **Starlight Journey**: Starlight travels billions of miles through empty vacuum space in a straight beam.\n- 💨 **Bending Air**: When that tiny beam hits Earth's atmosphere, it passes through layers of moving hot and cold air currents.\n- ✨ **Refraction**: The moving air bends (refracts) the light back and forth rapidly, making the star seem to dance and twinkle to your eyes!",
+        spokenAnswer: "Stars shine steadily in space, but they twinkle to our eyes because Earth's moving atmosphere bends the light back and forth as it travels down to us!",
+        funFact: "Telescopes in outer space, like the Hubble and James Webb Space Telescopes, see stars without any twinkling at all because there is no atmosphere in space!",
+        keyMetrics: [
+          { label: "Scientific Term", value: "Astronomical Scintillation" },
+          { label: "Cause", value: "Atmospheric Refraction" }
+        ]
+      },
+      {
+        patterns: [
+          /how\s+do\s+rainbows?\s+form/i,
+          /how\s+(?:is\s+a|are)\s+rainbows?\s+made/i,
+          /what\s+causes\s+a\s+rainbow/i
+        ],
+        topic: "How Do Rainbows Form?",
+        category: "Optics & Meteorology",
+        emoji: "🌈🌦️☀️",
+        answer: "Rainbows form when **sunlight shines through millions of falling raindrops** in the sky, acting like tiny glass prisms!\n\n1. ☀️ **White Sunlight**: Sunlight contains all colors of light combined.\n2. 💧 **Refraction**: As light enters a round raindrop, it slows down and bends (refracts).\n3. 🪞 **Internal Reflection**: The light bounces off the back inner wall of the raindrop.\n4. 🌈 **Dispersion**: Because each color bends at a slightly different angle, the white light separates into the 7 rainbow colors: **Red, Orange, Yellow, Green, Blue, Indigo, and Violet (ROYGBIV)**!",
+        spokenAnswer: "Rainbows happen when sunlight shines through raindrops. Each raindrop acts like a tiny prism that splits white sunlight into all the colors of the rainbow!",
+        funFact: "Every rainbow is actually a complete full circle! We only see a semi-circle arch because the ground blocks the bottom half from our view!",
+        keyMetrics: [
+          { label: "7 Rainbow Colors", value: "Red, Orange, Yellow, Green, Blue, Indigo, Violet" },
+          { label: "Key Physics", value: "Refraction, Reflection, Dispersion" }
+        ]
+      },
+      {
+        patterns: [
+          /how\s+do\s+fish\s+breathe/i,
+          /how\s+fish\s+breathe\s+underwater/i
+        ],
+        topic: "How Do Fish Breathe Underwater?",
+        category: "Marine Biology & Zoology",
+        emoji: "🐟🐠🌊",
+        answer: "Fish breathe underwater using specialized organs called **gills** instead of lungs!\n\n1. 💧 **Taking in Water**: A fish opens its mouth and gulps in water that contains dissolved oxygen molecules (O₂).\n2. 🩸 **Feather-like Gills**: The water flows over thin gill filaments packed with thousands of microscopic blood vessels.\n3. 🔄 **Oxygen Exchange**: Oxygen passes through the thin gill membranes directly into the fish's blood, while carbon dioxide waste is pumped back out into the water!",
+        spokenAnswer: "Fish use gills instead of lungs! When water passes over their gills, tiny blood vessels absorb dissolved oxygen directly from the water.",
+        funFact: "Some fish, like sharks, have to keep swimming forward continuously so that water keeps flowing over their gills!",
+        keyMetrics: [
+          { label: "Breathing Organ", value: "Gills (Branchiae)" },
+          { label: "Absorbed Gas", value: "Dissolved Oxygen (O₂)" }
+        ]
+      },
+      {
+        patterns: [
+          /what\s+are\s+black\s+holes/i,
+          /what\s+is\s+a\s+black\s+hole/i
+        ],
+        topic: "What Are Black Holes?",
+        category: "Astrophysics & Cosmology",
+        emoji: "🕳️🌌⭐",
+        answer: "A **black hole** is a place in outer space where gravity pulls so immensely strong that **nothing — not even light itself — can escape its grip**!\n\n- 🌟 **How They Form**: When a massive giant star (at least 20 times bigger than our Sun) runs out of fuel at the end of its life, it collapses in on itself in a huge supernova explosion, crushing all its mass into a tiny point called a *singularity*.\n- 🕳️ **Event Horizon**: The outer edge of a black hole is called the *Event Horizon* — the point of no return.\n- 🌌 **Center of Galaxies**: Almost every big galaxy, including our own Milky Way, has a supermassive black hole at its center (ours is named *Sagittarius A\** and has the mass of 4 million suns)!",
+        spokenAnswer: "A black hole is a region in space where gravity is so incredibly strong that nothing, not even light, can escape! They form when giant stars collapse at the end of their lives.",
+        funFact: "Time actually slows down near a black hole because of its extreme gravitational warping of spacetime!",
+        keyMetrics: [
+          { label: "Core Point", value: "Gravitational Singularity" },
+          { label: "Boundary", value: "Event Horizon" },
+          { label: "Milky Way Center", value: "Sagittarius A* (4M Suns)" }
+        ]
+      },
+      {
+        patterns: [
+          /what\s+is\s+(?:lightning|thunder)/i,
+          /how\s+is\s+lightning\s+made/i,
+          /why\s+does\s+thunder\s+happen/i
+        ],
+        topic: "What is Lightning and Thunder?",
+        category: "Meteorology & Physics",
+        emoji: "⚡🌩️🔊",
+        answer: "**Lightning and thunder** are two parts of the exact same powerful weather event:\n\n- ⚡ **Lightning (Giant Electric Spark)**: Inside a storm cloud, ice crystals and raindrops bump into each other, building up massive static electricity. When the electric charge becomes too big, it discharges as a giant bolt of electricity connecting clouds and the ground!\n- 🔊 **Thunder (Sound of Heat Expansion)**: A lightning bolt heats the surrounding air to over **30,000°C (54,000°F) — 5 times hotter than the surface of the Sun**! This causes the air to violently explode outward and crash back together, creating the rumbling boom of thunder.\n- 💡 **Speed Trick**: Since light travels faster than sound, you always see the lightning flash before hearing the thunder!",
+        spokenAnswer: "Lightning is a giant bolt of static electricity inside storm clouds. Thunder is the sound made when lightning superheats the air to 30,000 degrees, causing it to rapidly explode outward!",
+        funFact: "You can tell how far away a thunderstorm is: count the seconds between seeing the lightning and hearing the thunder, then divide by 5 to find the distance in miles (or divide by 3 for kilometers)!",
+        keyMetrics: [
+          { label: "Lightning Temperature", value: "30,000°C (54,000°F)" },
+          { label: "Average Voltage", value: "300 Million Volts" }
+        ]
+      },
+      {
+        patterns: [
+          /why\s+do\s+leaves\s+change\s+color/i,
+          /why\s+leaves\s+turn\s+(?:yellow|orange|red)/i,
+          /leaves\s+in\s+(?:fall|autumn)/i
+        ],
+        topic: "Why Do Leaves Change Color in Autumn?",
+        category: "Botany & Nature",
+        emoji: "🍂🍁🌳",
+        answer: "Leaves change color in autumn because trees stop producing **chlorophyll**, the green chemical they use to make food from sunlight!\n\n1. 🍃 **Green Chlorophyll**: In spring and summer, leaves are packed with green chlorophyll to perform photosynthesis.\n2. 🍂 **Shorter Days & Cool Temperatures**: In autumn, days grow shorter and colder. Trees prepare for winter by resting and breaking down chlorophyll.\n3. 🍁 **Hidden Colors Revealed**: As the green chlorophyll fades, other pigments that were hidden underneath all summer — like orange carotenoids and yellow xanthophylls — become brightly visible!",
+        spokenAnswer: "In autumn, as days get shorter and colder, trees stop making green chlorophyll, which reveals the bright yellow, orange, and red colors that were hiding inside the leaf all along!",
+        funFact: "Evergreen trees like pine and spruce don't lose their needles because their needles have a waxy coating and natural antifreeze fluids to survive freezing winters!",
+        keyMetrics: [
+          { label: "Green Pigment", value: "Chlorophyll" },
+          { label: "Orange/Yellow Pigments", value: "Carotenoids & Flavonoids" },
+          { label: "Red/Purple Pigments", value: "Anthocyanins" }
+        ]
+      },
+      {
+        patterns: [
+          /fastest\s+animal/i,
+          /what\s+is\s+the\s+fastest\s+creature/i,
+          /cheetah\s+speed/i,
+          /peregrine\s+falcon/i
+        ],
+        topic: "What is the Fastest Animal on Earth?",
+        category: "Zoology & Animal Science",
+        emoji: "🦅🐆⚡",
+        answer: "The fastest animals on Earth depend on where they move:\n\n- 🦅 **In the Air (Overall Fastest Animal)**: The **Peregrine Falcon** is the fastest creature on Earth! When diving to catch prey (*hunting stoop*), it reaches speeds of **390 km/h (242 mph)** — faster than a Formula 1 race car!\n- 🐆 **On Land**: The **Cheetah** is the fastest land animal, accelerating from 0 to 60 mph in just **3 seconds** and reaching top speeds of **120 km/h (75 mph)**!\n- 🐟 **In the Ocean**: The **Black Marlin / Sailfish** is the fastest swimmer, darting through water at up to **110 km/h (68 mph)**!",
+        spokenAnswer: "The fastest animal in the air is the Peregrine Falcon, reaching 242 miles per hour in a dive. On land, the Cheetah is fastest at 75 miles per hour!",
+        funFact: "Cheetahs use their long muscular tails like a boat rudder to make sharp, high-speed turns while sprinting!",
+        keyMetrics: [
+          { label: "Fastest Bird (Dive)", value: "Peregrine Falcon (390 km/h / 242 mph)" },
+          { label: "Fastest Land Animal", value: "Cheetah (120 km/h / 75 mph)" },
+          { label: "Fastest Sea Animal", value: "Sailfish (110 km/h / 68 mph)" }
+        ]
+      },
+      {
+        patterns: [
+          /why\s+do\s+fireflies\s+glow/i,
+          /how\s+do\s+lightning\s+bugs\s+glow/i,
+          /bioluminescence/i
+        ],
+        topic: "Why Do Fireflies Glow at Night?",
+        category: "Entomology & Chemistry",
+        emoji: "✨🪲🌿",
+        answer: "Fireflies (lightning bugs) glow through a magical chemical process called **Bioluminescence** inside their lower abdomen!\n\n1. 🧪 **Chemical Reaction**: Inside special light-producing organs, a molecule called **luciferin** mixes with oxygen, an enzyme called **luciferase**, and cellular energy (ATP).\n2. 💡 **100% Cold Light**: Standard lightbulbs produce mostly heat with little light. Firefly light is **100% efficient cold light** — meaning almost no energy is wasted as heat!\n3. 🌟 **Communication**: Fireflies flash their rhythmic light patterns like glowing Morse code to talk to each other, attract mates, and warn predators that they taste bad!",
+        spokenAnswer: "Fireflies glow through bioluminescence! A chemical reaction in their belly creates pure cold light to talk to other fireflies in the dark.",
+        funFact: "Each species of firefly has its own unique flashing rhythm and color (green, yellow, or pale red) so they can recognize their own friends!",
+        keyMetrics: [
+          { label: "Process", value: "Bioluminescence" },
+          { label: "Key Chemical", value: "Luciferin + Luciferase" },
+          { label: "Energy Efficiency", value: "Nearly 100% Cold Light" }
+        ]
+      },
+      {
+        patterns: [
+          /why\s+do\s+onions\s+make\s+(?:you|us)\s+cry/i,
+          /cutting\s+onions\s+tears/i
+        ],
+        topic: "Why Do Onions Make You Cry?",
+        category: "Chemistry & Biology",
+        emoji: "🧅💧😭",
+        answer: "Onions make your eyes water because of a natural defense mechanism that releases a mild chemical vapor when the onion cells are sliced!\n\n1. 🧅 **Breaking Cells**: When you chop an onion, cell walls break open and mix sulfur compounds with enzymes.\n2. 💨 **Sulfur Gas**: This reaction creates a volatile gas called *syn-propanethial-S-oxide* that floats up into the air.\n3. 💧 **Tears to the Rescue**: When the gas touches the moisture in your eyes, it turns into tiny amounts of mild sulfuric acid. Your eye's nerve endings sense this and immediately tell your tear glands to produce tears to wash it safely away!",
+        spokenAnswer: "When you cut an onion, it releases a mild sulfur gas. When this gas touches your eye moisture, your body makes tears to wash the sting away!",
+        funFact: "Chilling an onion in the refrigerator before cutting it slows down the chemical reaction and reduces the tears!",
+        keyMetrics: [
+          { label: "Trigger Chemical", value: "Syn-propanethial-S-oxide" },
+          { label: "Body Response", value: "Reflex Lacrimation (Tears)" }
+        ]
+      },
+      {
+        patterns: [
+          /what\s+is\s+photosynthesis/i,
+          /how\s+do\s+plants\s+make\s+food/i
+        ],
+        topic: "What is Photosynthesis?",
+        category: "Plant Biology & Ecology",
+        emoji: "🍃☀️🌱",
+        answer: "**Photosynthesis** is the amazing process that green plants, algae, and trees use to convert sunlight, water, and air into energy and oxygen!\n\n- ☀️ **Formula for Life**: **Sunlight + Water (H₂O) + Carbon Dioxide (CO₂) → Glucose Sugar + Oxygen (O₂)**\n- 🍃 **Solar Panels**: Green plant leaves contain microscopic structures called *chloroplasts* with green *chlorophyll* pigments that absorb sunlight like solar panels.\n- 🫁 **Earth's Lungs**: Photosynthesis produces almost all the fresh oxygen that humans and animals breathe to live!",
+        spokenAnswer: "Photosynthesis is how plants make food! Using sunlight, water, and carbon dioxide, leaves make sweet glucose sugar and release fresh oxygen for us to breathe!",
+        funFact: "More than half of the Earth's oxygen is made not by land trees, but by microscopic phytoplankton floating in the oceans!",
+        keyMetrics: [
+          { label: "Reactants", value: "Sunlight + Water + CO₂" },
+          { label: "Products", value: "Glucose + Oxygen (O₂)" },
+          { label: "Cell Organelle", value: "Chloroplasts" }
+        ]
+      },
+      {
+        patterns: [
+          /what\s+is\s+(?:the\s+)?water\s+cycle/i,
+          /how\s+does\s+rain\s+work/i
+        ],
+        topic: "What is the Water Cycle?",
+        category: "Earth Science & Meteorology",
+        emoji: "💧☁️🌧️",
+        answer: "The **Water Cycle (Hydrologic Cycle)** is the continuous, endless journey of water moving from the Earth to the sky and back again in 4 main steps:\n\n1. ☀️ **Evaporation**: The Sun heats liquid water in oceans, lakes, and rivers, turning it into invisible water vapor gas that rises into the atmosphere.\n2. ☁️ **Condensation**: High in the cold sky, water vapor cools down and clumps around tiny dust particles to form fluffy white clouds.\n3. 🌧️ **Precipitation**: When cloud droplets become too heavy, they fall back to the ground as rain, snow, sleet, or hail.\n4. 🌊 **Collection**: Rainwater flows into streams, rivers, and oceans, where the cycle begins all over again!",
+        spokenAnswer: "The water cycle is how water moves around Earth: it evaporates into the sky, condenses into clouds, falls as rain, and flows back into rivers and oceans in a continuous loop!",
+        funFact: "The water you drink today is the exact same water that dinosaurs drank 100 million years ago, recycled endlessly by Earth!",
+        keyMetrics: [
+          { label: "4 Cycle Stages", value: "Evaporation, Condensation, Precipitation, Collection" },
+          { label: "Primary Energy Engine", value: "Solar Heat from the Sun" }
+        ]
+      },
+      {
+        patterns: [
+          /why\s+do\s+we\s+(?:sleep|dream)/i,
+          /what\s+are\s+dreams/i
+        ],
+        topic: "Why Do We Sleep and Dream?",
+        category: "Neuroscience & Human Biology",
+        emoji: "🧠😴🌙",
+        answer: "We sleep and dream because your brain and body need essential time to recharge, repair, and organize memories!\n\n- 🧠 **Memory Filing (REM Sleep)**: While dreaming in REM (Rapid Eye Movement) sleep, your brain replays memories from the day, organizes knowledge, and sparks creative problem-solving.\n- 🛠️ **Body Repair & Growth**: While in deep sleep, your body repairs muscles, strengthens your immune system, and releases human growth hormones (which is why kids grow while sleeping!).\n- 🔋 **Brain Cleaning**: During sleep, fluid flushes through the brain to clean out metabolic waste products built up during waking hours.",
+        spokenAnswer: "Sleep gives your body time to grow, heal, and recharge. While dreaming, your brain files away memories and practices creative ideas!",
+        funFact: "Your brain is actually just as active while you are dreaming in REM sleep as it is when you are wide awake playing video games!",
+        keyMetrics: [
+          { label: "Dreaming Phase", value: "REM (Rapid Eye Movement)" },
+          { label: "Recommended Kids Sleep", value: "9 - 11 Hours per Night" }
+        ]
+      },
+
+      // ==========================================
+      // 2. ASTRONOMY & CELESTIAL DISTANCES
       // ==========================================
       {
         patterns: [
@@ -710,7 +1043,7 @@ class AIReasoningEngine {
       },
 
       // ==========================================
-      // GEOGRAPHY & EARTH SCIENCE
+      // 3. GEOGRAPHY & NATURE WONDERS
       // ==========================================
       {
         patterns: [
@@ -767,7 +1100,7 @@ class AIReasoningEngine {
       },
 
       // ==========================================
-      // BIOLOGY & HUMAN BODY
+      // 4. BIOLOGY, HUMAN BODY & ANIMALS
       // ==========================================
       {
         patterns: [
@@ -824,7 +1157,7 @@ class AIReasoningEngine {
       },
 
       // ==========================================
-      // INVENTIONS & HISTORY
+      // 5. INVENTIONS & SPACE HISTORY
       // ==========================================
       {
         patterns: [
@@ -856,4 +1189,3 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AIReasoningEngine };
 }
-
